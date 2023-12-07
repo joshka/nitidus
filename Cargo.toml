@@ -1,5 +1,6 @@
 [package]
 name = "nitidus"
+authors = ["Joshka"]
 description = "A TUI email client"
 repository = "https://github.com/joshka/nitidus"
 license = "MIT"
