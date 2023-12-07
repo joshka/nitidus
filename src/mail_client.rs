@@ -38,7 +38,7 @@ impl MailClient {
         })
     }
 
-    fn folder_or_default(&self) -> &str {
+    pub fn folder_or_default(&self) -> &str {
         self.folder
             .as_ref()
             .map_or(DEFAULT_INBOX_FOLDER, String::as_ref)

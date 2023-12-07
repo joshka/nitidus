@@ -12,6 +12,7 @@ pub struct App {
     body: String,
     running_state: RunningState,
     table_state: TableState,
+    folder_name: String,
 }
 
 #[derive(Debug, Default, PartialEq, Eq)]
@@ -39,8 +40,10 @@ pub async fn run(
 
 impl App {
     pub fn new(mail_client: MailClient) -> Self {
+        let folder_name = mail_client.folder_or_default().to_string();
         Self {
             mail_client,
+            folder_name,
             ..Default::default()
         }
     }
@@ -71,12 +74,14 @@ impl App {
                 Constraint::Length(1),
                 Constraint::Length(15),
                 Constraint::Min(0),
+                Constraint::Length(1),
             ])
             .split(frame.size());
 
         self.render_title(frame, areas[0]);
         self.render_message_list(frame, areas[1]);
         self.render_message(frame, areas[2]);
+        self.render_status_bar(frame, areas[3]);
     }
 
     fn render_title(&self, frame: &mut Frame, area: Rect) {
@@ -86,6 +91,17 @@ impl App {
             "█▇▆▅▄▃▂▁".light_blue(),
         ]);
         frame.render_widget(Paragraph::new(title).alignment(Alignment::Center), area);
+    }
+
+    fn render_status_bar(&self, frame: &mut Frame, area: Rect) {
+        let text = "j/▼ down | k/▲ up | space/view | q/esc quit".bold();
+        frame.render_widget(
+            Paragraph::new(text)
+                .black()
+                .on_white()
+                .alignment(Alignment::Center),
+            area,
+        );
     }
 
     fn render_message_list(&mut self, frame: &mut Frame, area: Rect) {
@@ -100,13 +116,18 @@ impl App {
                     .white(),
             )
             .highlight_symbol(">> ")
-            .block(Block::default().borders(Borders::ALL).title("Inbox"));
+            .block(
+                Block::default()
+                    .title(self.folder_name.clone().bold().white())
+                    .borders(Borders::ALL)
+                    .border_set(symbols::border::QUADRANT_OUTSIDE)
+                    .border_style(Style::new().light_blue()),
+            );
         frame.render_stateful_widget(table, area, &mut self.table_state);
     }
 
     fn render_message(&self, frame: &mut Frame, area: Rect) {
-        let text = Paragraph::new(self.body.clone())
-            .block(Block::default().borders(Borders::ALL).title("Message"));
+        let text = Paragraph::new(self.body.clone());
         frame.render_widget(text, area);
     }
 
@@ -126,8 +147,9 @@ impl App {
         }
         match key_event.code {
             KeyCode::Char('q') | KeyCode::Esc => self.quit(),
-            KeyCode::Char('j') | KeyCode::Down => self.next().await?,
-            KeyCode::Char('k') | KeyCode::Up => self.previous().await?,
+            KeyCode::Char('j') | KeyCode::Down => self.next(),
+            KeyCode::Char('k') | KeyCode::Up => self.previous(),
+            KeyCode::Char(' ') => self.load_message().await?,
             _ => {}
         }
         Ok(())
@@ -137,33 +159,25 @@ impl App {
         self.running_state = RunningState::Finished;
     }
 
+    fn next(&mut self) {
+        let next = (self.table_state.selected().unwrap_or(0) + 1) % self.envelope_count();
+        self.table_state.select(Some(next));
+    }
+
+    fn previous(&mut self) {
+        let previous = (self.table_state.selected().unwrap_or(0) + self.envelope_count() - 1)
+            % self.envelope_count();
+        self.table_state.select(Some(previous));
+    }
+
     fn envelope_count(&self) -> usize {
         self.envelopes.len()
     }
 
-    async fn next(&mut self) -> color_eyre::Result<()> {
-        let next = (self.table_state.selected().unwrap_or(0) + 1) % self.envelope_count();
-        self.table_state.select(Some(next));
-        let id = self.envelope_id(next);
-        self.load_message(&id).await?;
-        Ok(())
-    }
-
-    async fn previous(&mut self) -> color_eyre::Result<()> {
-        let previous = (self.table_state.selected().unwrap_or(0) + self.envelope_count() - 1)
-            % self.envelope_count();
-        self.table_state.select(Some(previous));
-        let id = self.envelope_id(previous);
-        self.load_message(&id).await?;
-        Ok(())
-    }
-
-    fn envelope_id(&mut self, index: usize) -> String {
-        self.envelopes[index].id.clone()
-    }
-
-    async fn load_message(&mut self, id: &str) -> color_eyre::Result<()> {
-        let messages = self.mail_client.load_messages(id).await?;
+    async fn load_message(&mut self) -> Result<(), color_eyre::eyre::Error> {
+        let index = self.table_state.selected().unwrap_or(0);
+        let id = self.envelopes[index].id.clone();
+        let messages = self.mail_client.load_messages(&id).await?;
         if let Some(message) = messages.first() {
             self.body = String::from_utf8_lossy(message.raw()?).into_owned();
         }
