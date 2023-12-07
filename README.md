@@ -28,3 +28,5 @@ Options:
   -h, --help                    Print help
   -V, --version                 Print version
 ```
+
+![demo](https://github.com/joshka/nitidus/assets/381361/889b752f-b5e2-4393-bb19-071190c9fc25)
