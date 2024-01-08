@@ -8,33 +8,34 @@ use email::{
 };
 use himalaya::config::DeserializedConfig;
 
-use crate::Args;
+use crate::config;
 
 #[derive(Debug, Default)]
 pub struct MailClient {
     config: DeserializedConfig,
-    // account_config: AccountConfig,
     backend_builder: BackendBuilder,
     folder: Option<String>,
 }
 
 impl MailClient {
-    pub async fn init(args: &Args) -> color_eyre::Result<Self> {
-        let config = load_config(args.config.clone())?;
-        let account_name = args.account_name.as_ref().map(String::as_ref);
-        let account_config = config.to_account_config(account_name).map_err(|err| {
-            eyre!(
-                "cannot find account `{}` in config file: {}",
-                account_name.unwrap_or("default"),
-                err
-            )
-        })?;
+    pub async fn init() -> color_eyre::Result<Self> {
+        let app_config = config::get();
+        let himalaya_config = load_config(app_config.himalaya_config.clone())?;
+        let account_name = app_config.account_name.as_ref().map(String::as_ref);
+        let account_config = himalaya_config
+            .to_account_config(account_name)
+            .map_err(|err| {
+                eyre!(
+                    "cannot find account `{}` in config file: {}",
+                    account_name.unwrap_or("default"),
+                    err
+                )
+            })?;
         let backend_builder = BackendBuilder::new(account_config.clone());
         Ok(Self {
-            config,
-            // account_config,
+            config: himalaya_config,
             backend_builder,
-            folder: args.folder.clone(),
+            folder: app_config.folder.clone(),
         })
     }
 
@@ -67,10 +68,9 @@ impl MailClient {
 }
 
 fn load_config(path: Option<PathBuf>) -> color_eyre::Result<DeserializedConfig> {
-    let path = path
-        .or_else(DeserializedConfig::path)
-        .ok_or_else(|| eyre!("config file not found, please run `himalaya` to create one"))?;
-    let content = fs::read_to_string(&path).wrap_err("cannot read config file")?;
+    let path =
+        path.ok_or_else(|| eyre!("config file not found, please run `himalaya` to create one"))?;
+    let content = fs::read_to_string(path).wrap_err("cannot read config file")?;
     let config: DeserializedConfig =
         toml::from_str(&content).wrap_err("cannot parse config file")?;
     if config.accounts.is_empty() {

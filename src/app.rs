@@ -31,7 +31,7 @@ struct Envelope {
 }
 
 pub async fn run(
-    terminal: &mut Terminal<impl Backend>,
+    terminal: Terminal<impl Backend>,
     mail_client: MailClient,
 ) -> color_eyre::Result<()> {
     // note that this should be done in the actual app, but this is just for PoC purposes
@@ -48,11 +48,11 @@ impl App {
         }
     }
 
-    pub async fn run(&mut self, terminal: &mut Terminal<impl Backend>) -> color_eyre::Result<()> {
+    pub async fn run(&mut self, mut terminal: Terminal<impl Backend>) -> color_eyre::Result<()> {
         let envelopes = self.mail_client.load_folder().await?;
         self.envelopes = envelopes;
         while self.is_running() {
-            self.draw(terminal)?;
+            self.draw(&mut terminal)?;
             self.update().await.wrap_err("update failed")?;
         }
         Ok(())
@@ -107,8 +107,7 @@ impl App {
     fn render_message_list(&mut self, frame: &mut Frame, area: Rect) {
         let rows = self.envelopes.iter().map(Envelope::from).map(Row::from);
         let widths = [50, 30, 20].map(Constraint::Percentage);
-        let table = Table::new(rows)
-            .widths(&widths)
+        let table = Table::new(rows, &widths)
             .header(
                 Row::new(vec!["SUBJECT", "FROM", "DATE"])
                     .bold()
