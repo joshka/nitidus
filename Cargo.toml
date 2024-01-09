@@ -28,6 +28,7 @@ tracing-error = "0.2.0"
 tracing-log = "0.2.0"
 tui-logger = { version = "0.10.0", default-features = false, features = ["tracing-support"] }
 indoc = "2.0.4"
+strum = { version = "0.25.0", features = ["derive"] }
 
 # email-lib = { git = "https://git.sr.ht/~soywod/pimalaya", default-features = false }
 # mail-builder = "0.3.1"

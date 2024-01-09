@@ -1,7 +1,7 @@
-use crate::account_config::AccountConfigView;
+use crate::{account_config::AccountConfig, control::Control};
 use color_eyre::eyre::WrapErr;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
-use ratatui::prelude::*;
+use ratatui::{prelude::*, widgets::Widget};
 
 pub fn run(terminal: Terminal<impl Backend>) -> color_eyre::Result<()> {
     let mut app = App::default();
@@ -11,7 +11,7 @@ pub fn run(terminal: Terminal<impl Backend>) -> color_eyre::Result<()> {
 #[derive(Debug, Default)]
 struct App {
     running_state: RunningState,
-    configure_account: AccountConfigView,
+    configure_account: AccountConfig,
 }
 
 #[derive(Debug, Default, PartialEq, Eq)]
@@ -23,7 +23,7 @@ enum RunningState {
 
 impl App {
     fn run(&mut self, mut terminal: Terminal<impl Backend>) -> color_eyre::Result<()> {
-        terminal.show_cursor()?;
+        self.configure_account.focus();
         while self.is_running() {
             self.draw(&mut terminal)?;
             self.update()?;
@@ -37,7 +37,7 @@ impl App {
 
     fn draw(&mut self, terminal: &mut Terminal<impl Backend>) -> color_eyre::Result<()> {
         terminal.draw(|frame| {
-            self.configure_account.render(frame);
+            frame.render_widget(self.configure_account.as_widget(), frame.size());
         })?;
         Ok(())
     }
@@ -57,7 +57,9 @@ impl App {
         }
         match key_event.code {
             KeyCode::Esc => self.quit(),
-            _ => self.configure_account.handle_key_event(key_event),
+            _ => {
+                let _ = self.configure_account.handle_key_event(key_event);
+            }
         }
         Ok(())
     }

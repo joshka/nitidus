@@ -1,7 +1,12 @@
-use crossterm::event::KeyEvent;
-use ratatui::{prelude::*, widgets::Widget};
+use std::ops::ControlFlow;
 
-use crate::fields::TextField;
+use crossterm::event::KeyEvent;
+use ratatui::{
+    prelude::*,
+    widgets::{Block, BorderType, Borders, Widget},
+};
+
+use crate::{control::Control, fields::TextField};
 
 #[derive(Debug)]
 pub struct MaildirConfig {
@@ -26,29 +31,35 @@ impl Default for MaildirConfig {
     }
 }
 
-impl MaildirConfig {
-    pub fn as_widget<'a>(&'a self) -> impl Widget + 'a {
+impl Control for MaildirConfig {
+    fn as_widget<'a>(&'a self) -> impl Widget + 'a {
         MaildirConfigWidget { config: self }
     }
 
-    pub fn focus(&mut self) {
+    fn focus(&mut self) {
         self.is_focused = true;
     }
 
-    pub fn blur(&mut self) {
+    fn blur(&mut self) {
         self.is_focused = false;
     }
 
-    pub fn handle_key_event(&mut self, key: KeyEvent) {
-        self.directory.handle_key_event(key);
+    fn handle_key_event(&mut self, key: KeyEvent) -> ControlFlow<()> {
+        self.directory.handle_key_event(key)
     }
 }
 
 impl<'a> Widget for MaildirConfigWidget<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let config = self.config;
+        let block = Block::default()
+            .title("Maildir Config")
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded);
+        let inner = block.inner(area);
+        block.render(area, buf);
         let layout = Layout::vertical([1]);
-        let [directory] = area.split(&layout);
+        let [directory] = inner.split(&layout);
         config.directory.as_widget().render(directory, buf);
     }
 }

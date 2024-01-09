@@ -2341,6 +2341,7 @@ dependencies = [
  "ratatui 0.26.0-alpha.0",
  "serde",
  "serde_with",
+ "strum",
  "tokio",
  "toml 0.8.8",
  "tracing",

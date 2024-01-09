@@ -6,6 +6,7 @@ mod account_config;
 mod app;
 mod app2;
 mod config;
+mod control;
 mod errors;
 mod fields;
 mod logging;

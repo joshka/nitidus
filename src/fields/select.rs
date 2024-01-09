@@ -1,10 +1,12 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, ops::ControlFlow};
 
 use crossterm::event::{KeyCode, KeyEvent};
 use directories::ProjectDirs;
 use email::account::AccountConfig;
 use ratatui::{layout::SegmentSize, prelude::*, widgets::Widget};
 use serde::de;
+
+use crate::control::Control;
 
 #[derive(Debug)]
 pub struct SelectField {
@@ -29,19 +31,24 @@ impl SelectField {
         }
     }
 
-    pub fn focus(&mut self) {
-        self.is_focused = true;
+    pub fn selected(&self) -> Option<&'static str> {
+        self.options.get(self.index).copied()
     }
-
-    pub fn blur(&mut self) {
-        self.is_focused = false;
-    }
-
-    pub fn as_widget<'a>(&'a self) -> impl Widget + 'a {
+}
+impl Control for SelectField {
+    fn as_widget<'a>(&'a self) -> impl Widget + 'a {
         SelectFieldWidget { field: self }
     }
 
-    pub fn handle_key_event(&mut self, key: KeyEvent) {
+    fn focus(&mut self) {
+        self.is_focused = true;
+    }
+
+    fn blur(&mut self) {
+        self.is_focused = false;
+    }
+
+    fn handle_key_event(&mut self, key: KeyEvent) -> ControlFlow<()> {
         match key.code {
             KeyCode::Left => {
                 self.index = (self.index + self.options.len() - 1) % self.options.len();
@@ -49,12 +56,9 @@ impl SelectField {
             KeyCode::Right => {
                 self.index = (self.index + 1) % self.options.len();
             }
-            _ => {}
+            _ => return ControlFlow::Continue(()),
         }
-    }
-
-    pub fn selected(&self) -> Option<&'static str> {
-        self.options.get(self.index).copied()
+        ControlFlow::Break(())
     }
 }
 
