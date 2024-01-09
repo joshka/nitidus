@@ -10,7 +10,6 @@ use crate::{control::Control, fields::TextField};
 
 #[derive(Debug)]
 pub struct MaildirConfig {
-    is_focused: bool,
     directory: TextField,
 }
 
@@ -25,7 +24,6 @@ impl Default for MaildirConfig {
             .map(|dirs| dirs.home_dir().join("Mail").display().to_string())
             .unwrap_or_default();
         Self {
-            is_focused: false,
             directory: TextField::with_default_value("Maildir directory", default_mail_dir),
         }
     }
@@ -37,11 +35,11 @@ impl Control for MaildirConfig {
     }
 
     fn focus(&mut self) {
-        self.is_focused = true;
+        self.directory.focus();
     }
 
     fn blur(&mut self) {
-        self.is_focused = false;
+        self.directory.blur();
     }
 
     fn handle_key_event(&mut self, key: KeyEvent) -> ControlFlow<()> {
