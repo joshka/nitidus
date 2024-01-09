@@ -2337,7 +2337,8 @@ dependencies = [
  "email-lib",
  "figment",
  "himalaya",
- "ratatui 0.25.0",
+ "indoc",
+ "ratatui 0.26.0-alpha.0",
  "serde",
  "serde_with",
  "tokio",
@@ -3033,9 +3034,9 @@ dependencies = [
 
 [[package]]
 name = "ratatui"
-version = "0.25.0"
+version = "0.26.0-alpha.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a5659e52e4ba6e07b2dad9f1158f578ef84a73762625ddb51536019f34d180eb"
+checksum = "0837bb94fd4a11ac392de0ad37c398b02aaaabbb8a763e6a04ea89576093fb4b"
 dependencies = [
  "bitflags 2.4.1",
  "cassowary",
