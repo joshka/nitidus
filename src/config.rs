@@ -139,7 +139,7 @@ pub fn init() -> color_eyre::Result<()> {
     let config = Figment::new()
         .merge(Serialized::defaults(AppConfig::default()))
         .merge(Toml::file(config_file))
-        .merge(Env::prefixed("APP_"))
+        .merge(Env::prefixed("NITIDUS_"))
         .merge(Serialized::defaults(cli))
         .extract::<AppConfig>()?;
     CONFIG
