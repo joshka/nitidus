@@ -1923,15 +1923,6 @@ checksum = "8f518f335dce6725a761382244631d86cf0ccb2863413590b31338feb467f9c3"
 
 [[package]]
 name = "itertools"
-version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1c173a5686ce8bfa551b3563d0c2170bf24ca44da99c7ca4bfdab5418c3fe57"
-dependencies = [
- "either",
-]
-
-[[package]]
-name = "itertools"
 version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "25db6b064527c5d482d0423354fcd07a89a2dfe07b67892e62411946db7f07b0"
@@ -2337,7 +2328,7 @@ dependencies = [
  "email-lib",
  "figment",
  "himalaya",
- "ratatui 0.25.0",
+ "ratatui",
  "serde",
  "serde_with",
  "tokio",
@@ -3016,23 +3007,6 @@ dependencies = [
 
 [[package]]
 name = "ratatui"
-version = "0.24.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ebc917cfb527a566c37ecb94c7e3fd098353516fb4eb6bea17015ade0182425"
-dependencies = [
- "bitflags 2.4.1",
- "cassowary",
- "indoc",
- "itertools 0.11.0",
- "lru",
- "paste",
- "strum",
- "unicode-segmentation",
- "unicode-width",
-]
-
-[[package]]
-name = "ratatui"
 version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a5659e52e4ba6e07b2dad9f1158f578ef84a73762625ddb51536019f34d180eb"
@@ -3041,7 +3015,7 @@ dependencies = [
  "cassowary",
  "crossterm",
  "indoc",
- "itertools 0.12.0",
+ "itertools",
  "lru",
  "paste",
  "stability",
@@ -4225,16 +4199,16 @@ checksum = "3528ecfd12c466c6f163363caf2d02a71161dd5e1cc6ae7b34207ea2d42d81ed"
 
 [[package]]
 name = "tui-logger"
-version = "0.10.0"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8534ddd1aab94e4f52ce82dfc886cc55ca1fdf0c843e5a0b8dfee37673254e88"
+checksum = "426be87a7a18b7da1a3f93785e0ffbba7bbdb81bc4c7c80118a48cc3d1a26180"
 dependencies = [
  "chrono",
  "fxhash",
  "lazy_static",
  "log",
  "parking_lot 0.12.1",
- "ratatui 0.24.0",
+ "ratatui",
  "tracing",
  "tracing-subscriber",
 ]
