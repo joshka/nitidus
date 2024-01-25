@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.5](https://github.com/joshka/nitidus/compare/v0.1.4...v0.1.5) - 2024-01-25
+
+### Other
+- Create ci.yml
+- *(deps)* bump clap from 4.4.13 to 4.4.18 ([#9](https://github.com/joshka/nitidus/pull/9))
+- *(deps)* bump tui-logger from 0.10.0 to 0.10.1 ([#8](https://github.com/joshka/nitidus/pull/8))
+- *(deps)* bump serde_with from 3.4.0 to 3.5.1 ([#7](https://github.com/joshka/nitidus/pull/7))
+- Create dependabot.yml
+
 ## [0.1.4](https://github.com/joshka/nitidus/compare/v0.1.3...v0.1.4) - 2024-01-09
 
 ### Added

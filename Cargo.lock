@@ -2319,7 +2319,7 @@ checksum = "e4a24736216ec316047a1fc4252e27dabb04218aa4a3f37c6e7ddbf1f9782b54"
 
 [[package]]
 name = "nitidus"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "clap",
  "color-eyre",
