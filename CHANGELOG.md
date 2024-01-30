@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.6](https://github.com/joshka/nitidus/compare/v0.1.5...v0.1.6) - 2024-01-30
+
+### Other
+- *(deps)* bump serde from 1.0.195 to 1.0.196 ([#11](https://github.com/joshka/nitidus/pull/11))
+- *(deps)* bump figment from 0.10.13 to 0.10.14 ([#12](https://github.com/joshka/nitidus/pull/12))
+
 ## [0.1.5](https://github.com/joshka/nitidus/compare/v0.1.4...v0.1.5) - 2024-01-25
 
 ### Other
