@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.7](https://github.com/joshka/nitidus/compare/v0.1.6...v0.1.7) - 2024-02-13
+
+### Other
+- *(deps)* bump ratatui from 0.25.0 to 0.26.1 ([#18](https://github.com/joshka/nitidus/pull/18))
+- *(deps)* bump serde_with from 3.5.1 to 3.6.1 ([#19](https://github.com/joshka/nitidus/pull/19))
+
 ## [0.1.6](https://github.com/joshka/nitidus/compare/v0.1.5...v0.1.6) - 2024-01-30
 
 ### Other
