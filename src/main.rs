@@ -15,8 +15,8 @@ async fn main() -> color_eyre::Result<()> {
     errors::install_hooks()?;
 
     info!("starting nitidus");
-    let terminal = tui::init()?;
     let mail_client = MailClient::init().await?;
+    let terminal = tui::init()?;
     app::run(terminal, mail_client).await?;
     tui::restore()?;
     Ok(())

@@ -1,11 +1,13 @@
-use color_eyre::eyre::WrapErr;
+use color_eyre::eyre::{eyre, WrapErr};
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
-use email::email::{Envelopes, Flag, Flags};
+use email::{
+    email::envelope::Envelopes,
+    flag::{Flag, Flags},
+};
 use ratatui::{prelude::*, widgets::*};
 
 use crate::mail_client::MailClient;
 
-#[derive(Debug, Default)]
 pub struct App {
     mail_client: MailClient,
     envelopes: Envelopes,
@@ -44,7 +46,10 @@ impl App {
         Self {
             mail_client,
             folder_name,
-            ..Default::default()
+            envelopes: Envelopes::default(),
+            body: String::new(),
+            running_state: RunningState::Running,
+            table_state: TableState::default(),
         }
     }
 
@@ -178,14 +183,17 @@ impl App {
         let id = self.envelopes[index].id.clone();
         let messages = self.mail_client.load_messages(&id).await?;
         if let Some(message) = messages.first() {
-            self.body = String::from_utf8_lossy(message.raw()?).into_owned();
+            let body = message
+                .raw()
+                .map_err(|err| eyre!("cannot get raw message: {}", err))?;
+            self.body = String::from_utf8_lossy(body).into_owned();
         }
         Ok(())
     }
 }
 
-impl From<&email::email::Envelope> for Envelope {
-    fn from(envelope: &email::email::Envelope) -> Self {
+impl From<&email::email::envelope::Envelope> for Envelope {
+    fn from(envelope: &email::email::envelope::Envelope) -> Self {
         let subject = envelope.subject.clone();
         let from = envelope.from.to_string();
         let date = envelope.date.format("%F %R%:z").to_string();

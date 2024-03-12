@@ -1,29 +1,31 @@
-use std::{fs, path::PathBuf};
+use std::{path::PathBuf, sync::Arc};
 
-use color_eyre::eyre::{bail, eyre, WrapErr};
+use color_eyre::eyre::{bail, eyre};
 use email::{
-    account::{DEFAULT_INBOX_FOLDER, DEFAULT_PAGE_SIZE},
-    backend::BackendBuilder,
-    email::{Envelopes, Messages},
+    account::config::DEFAULT_PAGE_SIZE,
+    backend::{Backend, BackendBuilder},
+    email::{envelope::Envelopes, message::Messages},
+    envelope::{list::ListEnvelopes, Id},
+    folder::INBOX,
+    imap::{ImapContextBuilder, ImapContextSync},
+    message::get::GetMessages,
 };
-use himalaya::config::DeserializedConfig;
+use himalaya::config::TomlConfig;
 
 use crate::config;
 
-#[derive(Debug, Default)]
 pub struct MailClient {
-    config: DeserializedConfig,
-    backend_builder: BackendBuilder,
     folder: Option<String>,
+    backend: Backend<ImapContextSync>,
 }
 
 impl MailClient {
     pub async fn init() -> color_eyre::Result<Self> {
         let app_config = config::get();
-        let himalaya_config = load_config(app_config.himalaya_config.clone())?;
+        let himalaya_config = load_config(app_config.himalaya_config.clone()).await?;
         let account_name = app_config.account_name.as_ref().map(String::as_ref);
-        let account_config = himalaya_config
-            .to_account_config(account_name)
+        let (toml_account_config, account_config) = himalaya_config
+            .into_account_configs(account_name, true)
             .map_err(|err| {
                 eyre!(
                     "cannot find account `{}` in config file: {}",
@@ -31,50 +33,59 @@ impl MailClient {
                     err
                 )
             })?;
-        let backend_builder = BackendBuilder::new(account_config.clone());
+
+        let Some(ref imap_config) = toml_account_config.imap else {
+            bail!("missing imap config")
+        };
+        let imap_config = Arc::new(imap_config.clone());
+        let imap_ctx = ImapContextBuilder::new(account_config.clone(), imap_config);
+        let backend = BackendBuilder::new(account_config.clone(), imap_ctx.clone())
+            .build::<Backend<ImapContextSync>>()
+            .await
+            .map_err(|err| eyre!("cannot create imap backend: {}", err))?;
+
         Ok(Self {
-            config: himalaya_config,
-            backend_builder,
             folder: app_config.folder.clone(),
+            backend,
         })
     }
 
     pub fn folder_or_default(&self) -> &str {
-        self.folder
-            .as_ref()
-            .map_or(DEFAULT_INBOX_FOLDER, String::as_ref)
+        self.folder.as_ref().map_or(INBOX, String::as_ref)
     }
 
     pub async fn load_folder(&self) -> color_eyre::Result<Envelopes> {
-        let mut backend = self.backend_builder.clone().into_build().await?;
-        let page_size = self
-            .config
-            .email_listing_page_size
-            .unwrap_or(DEFAULT_PAGE_SIZE);
         let page = 0;
-        let envelopes = backend
-            .list_envelopes(self.folder_or_default(), page_size, page)
-            .await?;
+        let envelopes = self
+            .backend
+            .list_envelopes(self.folder_or_default(), DEFAULT_PAGE_SIZE, page)
+            .await
+            .map_err(|err| eyre!("cannot list envelopes: {}", err))?;
         Ok(envelopes)
     }
 
     pub async fn load_messages(&self, id: &str) -> color_eyre::Result<Messages> {
-        let mut backend = self.backend_builder.clone().into_build().await?;
-        let emails = backend
-            .get_emails(self.folder_or_default(), vec![id])
-            .await?;
+        let id = Id::single(id);
+        let emails = self
+            .backend
+            .get_messages(self.folder_or_default(), &id)
+            .await
+            .map_err(|err| eyre!("cannot get messages: {}", err))?;
         Ok(emails)
     }
 }
 
-fn load_config(path: Option<PathBuf>) -> color_eyre::Result<DeserializedConfig> {
+async fn load_config(path: Option<PathBuf>) -> color_eyre::Result<TomlConfig> {
     let path =
         path.ok_or_else(|| eyre!("config file not found, please run `himalaya` to create one"))?;
-    let content = fs::read_to_string(path).wrap_err("cannot read config file")?;
-    let config: DeserializedConfig =
-        toml::from_str(&content).wrap_err("cannot parse config file")?;
-    if config.accounts.is_empty() {
-        bail!("no accounts found in config file, please run `himalaya` to add one")
-    }
+
+    let config = TomlConfig::from_some_path_or_default(Some(path))
+        .await
+        .map_err(|err| {
+            eyre!(
+                "cannot load config file: {} (hint: run `himalaya` to create one)",
+                err,
+            )
+        })?;
     Ok(config)
 }

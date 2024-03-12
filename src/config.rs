@@ -1,13 +1,13 @@
-use std::{path::PathBuf, sync::OnceLock};
+use std::{path::PathBuf, process::exit, sync::OnceLock};
 
-use clap::Parser;
+use clap::{Parser, Subcommand};
 use color_eyre::eyre::eyre;
 use directories::ProjectDirs;
 use figment::{
     providers::{Env, Format, Serialized, Toml},
     Figment,
 };
-use himalaya::config::DeserializedConfig;
+use himalaya::config::TomlConfig;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, skip_serializing_none, DisplayFromStr, NoneAsEmptyString};
 use tracing::level_filters::LevelFilter;
@@ -19,9 +19,9 @@ static CONFIG: OnceLock<AppConfig> = OnceLock::new();
 /// Implements Serialize so that we can use it as a source for Figment configuration.
 #[serde_as]
 #[skip_serializing_none]
-#[derive(Debug, Default, Parser, Serialize)]
+#[derive(Debug, Default, Parser, Serialize, Clone)]
 #[command(author, version, about, long_about = None)]
-struct Cli {
+pub struct Cli {
     /// The directory to use for storing application data.
     #[arg(long, value_name = "DIR")]
     data_dir: Option<PathBuf>,
@@ -52,6 +52,17 @@ struct Cli {
     #[arg(short, long, value_name = "FOLDER")]
     #[serde_as(as = "NoneAsEmptyString")]
     folder: Option<String>,
+
+    #[clap(subcommand)]
+    pub command: Option<Command>,
+}
+
+/// Subcommands.
+#[derive(Debug, Serialize, Subcommand, Clone, Copy)]
+pub enum Command {
+    /// Print the default configuration file.
+    #[serde(rename = "print-default-config")]
+    PrintDefaultConfig,
 }
 
 /// Application configuration.
@@ -121,7 +132,7 @@ fn project_dirs() -> color_eyre::Result<ProjectDirs> {
 
 /// Returns the path to the default himalaya configuration file.
 fn default_himalaya_config() -> Option<PathBuf> {
-    DeserializedConfig::path()
+    TomlConfig::default_path().ok()
 }
 
 /// Initialize the application configuration.
@@ -140,8 +151,17 @@ pub fn init() -> color_eyre::Result<()> {
         .merge(Serialized::defaults(AppConfig::default()))
         .merge(Toml::file(config_file))
         .merge(Env::prefixed("NITIDUS_"))
-        .merge(Serialized::defaults(cli))
+        .merge(Serialized::defaults(cli.clone()))
         .extract::<AppConfig>()?;
+
+    match cli.command {
+        Some(Command::PrintDefaultConfig) => {
+            println!("{:#?}", config);
+            exit(0);
+        }
+        _ => (),
+    }
+
     CONFIG
         .set(config)
         .map_err(|config| eyre!("failed to set config {config:?}"))
