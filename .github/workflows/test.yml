@@ -1,0 +1,15 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test:
+    uses: joshka/github-workflows/.github/workflows/rust-test.yml@main
+    with:
+      crate_type: bin
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
