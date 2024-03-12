@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.8](https://github.com/joshka/nitidus/compare/v0.1.7...v0.1.8) - 2024-03-12
+
+### Other
+- *(deps)* bump clap from 4.4.18 to 4.5.2 ([#28](https://github.com/joshka/nitidus/pull/28))
+- *(deps)* bump codecov/codecov-action from 3 to 4 ([#14](https://github.com/joshka/nitidus/pull/14))
+- *(deps)* bump tokio from 1.35.1 to 1.36.0 ([#16](https://github.com/joshka/nitidus/pull/16))
+- *(deps)* bump the cargo group across 1 directories with 1 update ([#21](https://github.com/joshka/nitidus/pull/21))
+
 ## [0.1.7](https://github.com/joshka/nitidus/compare/v0.1.6...v0.1.7) - 2024-02-13
 
 ### Other
