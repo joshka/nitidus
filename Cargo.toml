@@ -10,7 +10,7 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "4.5.2", features = ["derive"] }
-color-eyre = { version = "0.6.2", features = ["issue-url"] }
+color-eyre = { version = "0.6.3", features = ["issue-url"] }
 crossterm = "0.27.0"
 directories = "5.0.1"
 email-lib = "=0.22.3"
