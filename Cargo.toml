@@ -9,7 +9,7 @@ version = "0.1.8"
 edition = "2021"
 
 [dependencies]
-clap = { version = "4.5.3", features = ["derive"] }
+clap = { version = "4.5.4", features = ["derive"] }
 color-eyre = { version = "0.6.3", features = ["issue-url"] }
 crossterm = "0.27.0"
 directories = "5.0.1"
