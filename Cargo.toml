@@ -16,7 +16,7 @@ directories = "5.0.1"
 email-lib = "=0.22.3"
 figment = { version = "0.10.16", features = ["env", "toml"] }
 himalaya = "1.0.0-beta.3"
-ratatui = "0.26.1"
+ratatui = "0.26.2"
 serde = "1.0.196"
 serde_with = "3.6.1"
 tokio = { version = "1.37.0", features = ["rt-multi-thread"] }
