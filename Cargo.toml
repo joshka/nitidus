@@ -26,7 +26,7 @@ tracing-appender = "0.2.3"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 tracing-error = "0.2.0"
 tracing-log = "0.2.0"
-tui-logger = { version = "0.11.0", default-features = false, features = [
+tui-logger = { version = "0.11.1", default-features = false, features = [
     "tracing-support",
 ] }
 
