@@ -17,8 +17,8 @@ email-lib = "=0.22.3"
 figment = { version = "0.10.18", features = ["env", "toml"] }
 himalaya = "1.0.0-beta.3"
 ratatui = "0.26.2"
-serde = "1.0.198"
-serde_with = "3.6.1"
+serde = "1.0.199"
+serde_with = "3.8.1"
 tokio = { version = "1.37.0", features = ["rt-multi-thread"] }
 toml = "0.8.12"
 tracing = "0.1.40"
@@ -26,7 +26,7 @@ tracing-appender = "0.2.3"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 tracing-error = "0.2.0"
 tracing-log = "0.2.0"
-tui-logger = { version = "0.11.0", default-features = false, features = [
+tui-logger = { version = "0.11.1", default-features = false, features = [
     "tracing-support",
 ] }
 
