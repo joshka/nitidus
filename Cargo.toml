@@ -9,7 +9,7 @@ version = "0.1.8"
 edition = "2021"
 
 [dependencies]
-clap = { version = "4.5.17", features = ["derive"] }
+clap = { version = "4.5.18", features = ["derive"] }
 color-eyre = { version = "0.6.3", features = ["issue-url"] }
 crossterm = "0.27.0"
 directories = "5.0.1"
@@ -26,7 +26,7 @@ tracing-appender = "0.2.3"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 tracing-error = "0.2.0"
 tracing-log = "0.2.0"
-tui-logger = { version = "0.12.0", default-features = false, features = [
+tui-logger = { version = "0.13.1", default-features = false, features = [
     "tracing-support",
 ] }
 
