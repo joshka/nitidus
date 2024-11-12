@@ -9,7 +9,7 @@ version = "0.1.8"
 edition = "2021"
 
 [dependencies]
-clap = { version = "4.5.19", features = ["derive"] }
+clap = { version = "4.5.20", features = ["derive"] }
 color-eyre = { version = "0.6.3", features = ["issue-url"] }
 crossterm = "0.27.0"
 directories = "5.0.1"
@@ -17,9 +17,9 @@ email-lib = "=0.22.3"
 figment = { version = "0.10.19", features = ["env", "toml"] }
 himalaya = "1.0.0-beta.3"
 ratatui = "0.27.0"
-serde = "1.0.210"
+serde = "1.0.214"
 serde_with = "3.11.0"
-tokio = { version = "1.40.0", features = ["rt-multi-thread"] }
+tokio = { version = "1.41.1", features = ["rt-multi-thread"] }
 toml = "0.8.19"
 tracing = "0.1.40"
 tracing-appender = "0.2.3"
