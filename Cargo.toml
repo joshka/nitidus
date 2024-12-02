@@ -21,10 +21,10 @@ serde = "1.0.215"
 serde_with = "3.11.0"
 tokio = { version = "1.41.1", features = ["rt-multi-thread"] }
 toml = "0.8.19"
-tracing = "0.1.40"
+tracing = "0.1.41"
 tracing-appender = "0.2.3"
-tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
-tracing-error = "0.2.0"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+tracing-error = "0.2.1"
 tracing-log = "0.2.0"
 tui-logger = { version = "0.14.0", default-features = false, features = [
     "tracing-support",
