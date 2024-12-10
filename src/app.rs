@@ -81,7 +81,7 @@ impl App {
                 Constraint::Min(0),
                 Constraint::Length(1),
             ])
-            .split(frame.size());
+            .split(frame.area());
 
         self.render_title(frame, areas[0]);
         self.render_message_list(frame, areas[1]);

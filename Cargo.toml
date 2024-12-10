@@ -11,12 +11,13 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.5.23", features = ["derive"] }
 color-eyre = { version = "0.6.3", features = ["issue-url"] }
-crossterm = "0.27.0"
+crossterm = "0.28.1"
 directories = "5.0.1"
-email-lib = "=0.22.3"
+email-lib = "0.26.2"
 figment = { version = "0.10.19", features = ["env", "toml"] }
-himalaya = "1.0.0-beta.3"
-ratatui = "0.27.0"
+himalaya = { version = "1.0.0" }
+pimalaya-tui = { version = "0.2.1", features = ["keyring", "config"] }
+ratatui = "0.29.0"
 serde = "1.0.215"
 serde_with = "3.11.0"
 tokio = { version = "1.42.0", features = ["rt-multi-thread"] }
@@ -26,9 +27,7 @@ tracing-appender = "0.2.3"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 tracing-error = "0.2.1"
 tracing-log = "0.2.0"
-tui-logger = { version = "0.14.0", default-features = false, features = [
-    "tracing-support",
-] }
+tui-logger = { version = "0.14.0", default-features = false, features = ["tracing-support"] }
 
 # email-lib = { git = "https://git.sr.ht/~soywod/pimalaya", default-features = false }
 # mail-builder = "0.3.1"

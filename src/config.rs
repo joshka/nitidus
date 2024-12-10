@@ -8,6 +8,7 @@ use figment::{
     Figment,
 };
 use himalaya::config::TomlConfig;
+use pimalaya_tui::terminal::config::TomlConfig as _;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, skip_serializing_none, DisplayFromStr, NoneAsEmptyString};
 use tracing::level_filters::LevelFilter;
