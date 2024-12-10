@@ -3,21 +3,19 @@ use tracing::info;
 
 mod app;
 mod config;
-mod errors;
 mod logging;
 mod mail_client;
-mod tui;
 
 #[tokio::main]
 async fn main() -> color_eyre::Result<()> {
+    color_eyre::install()?;
     config::init()?;
     let _guard = logging::init()?;
-    errors::install_hooks()?;
 
     info!("starting nitidus");
     let mail_client = MailClient::init().await?;
-    let terminal = tui::init()?;
-    app::run(terminal, mail_client).await?;
-    tui::restore()?;
-    Ok(())
+    let terminal = ratatui::init();
+    let result = app::run(terminal, mail_client).await;
+    ratatui::restore();
+    result
 }
