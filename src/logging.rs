@@ -1,5 +1,6 @@
-use tracing::debug;
-use tracing_appender::non_blocking::WorkerGuard;
+use std::fs::File;
+
+use tracing::info;
 
 use crate::config;
 
@@ -15,17 +16,20 @@ const LOG_FILE_NAME: &str = "nitidus.log";
 ///
 /// Returns a [`WorkerGuard`][guard] which is returned by [`tracing_appender::non_blocking`][non_blocking]
 /// to ensure buffered logs are flushed to their output in the case of abrupt terminations of a process.
-pub fn init() -> color_eyre::Result<WorkerGuard> {
+// pub fn init() -> color_eyre::Result<WorkerGuard> {
+pub fn init() -> color_eyre::Result<()> {
     use tracing_error::ErrorLayer;
     use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
     let app_config = config::get();
 
     // log to a file that is rotated hourly and stored in the app's data directory
-    let log_file = tracing_appender::rolling::hourly(app_config.data_dir.clone(), LOG_FILE_NAME);
-    let (log_file_writer, worker_guard) = tracing_appender::non_blocking(log_file);
+    // let log_file = tracing_appender::rolling::hourly(app_config.data_dir.clone(), LOG_FILE_NAME);
+    // let (log_file_writer, worker_guard) = tracing_appender::non_blocking(log_file);
+    let file = File::create(LOG_FILE_NAME)?;
     let log_file_layer = fmt::layer()
-        .with_writer(log_file_writer)
+        // .with_writer(log_file_writer)
+        .with_writer(file)
         .with_ansi(false)
         .compact();
 
@@ -36,6 +40,7 @@ pub fn init() -> color_eyre::Result<WorkerGuard> {
         .with(tui_logger::tracing_subscriber_layer())
         .try_init()?;
 
-    debug!("logging initialized");
-    Ok(worker_guard)
+    info!("logging initialized");
+    // Ok(worker_guard)
+    Ok(())
 }

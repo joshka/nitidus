@@ -40,7 +40,7 @@ pub struct Cli {
     /// The log level to use.
     ///
     /// Valid values are: error, warn, info, debug, trace, off. The default is info.
-    #[arg(long, value_name = "LEVEL", default_value = "info", alias = "log")]
+    #[arg(long, value_name = "LEVEL", default_value = "debug", alias = "log")]
     #[serde_as(as = "NoneAsEmptyString")]
     log_level: Option<LevelFilter>,
 
@@ -104,7 +104,7 @@ impl Default for AppConfig {
         Self {
             data_dir,
             himalaya_config,
-            log_level: LevelFilter::INFO,
+            log_level: LevelFilter::DEBUG,
             account_name: None,
             folder: None,
         }

@@ -26,7 +26,11 @@ pub struct MailClient {
 }
 
 impl MailClient {
+    #[instrument]
     pub async fn init() -> color_eyre::Result<Self> {
+        info!("initializing mail client");
+        secret::keyring::set_global_service_name("himalaya-cli");
+
         let app_config = config::get();
         let himalaya_config = load_config(app_config.himalaya_config.clone()).await?;
         let account_name = app_config.account_name.as_ref().map(String::as_ref);
@@ -39,13 +43,16 @@ impl MailClient {
                 )
             })?;
 
-        let account_config = Arc::new(account_config.clone());
         let Some(imap_config) = toml_account_config.imap_config() else {
             bail!("missing backend config")
         };
+
+        info!(?account_config, ?imap_config, "creating imap backend");
+
+        let account_config = Arc::new(account_config.clone());
         let imap_config = Arc::new(imap_config.clone());
         let imap_ctx = ImapContextBuilder::new(account_config.clone(), imap_config);
-        let backend = BackendBuilder::new(account_config.clone(), imap_ctx.clone())
+        let backend = BackendBuilder::new(account_config, imap_ctx.clone())
             .build()
             .await
             .wrap_err("cannot create imap backend")?;
@@ -60,7 +67,10 @@ impl MailClient {
         self.folder.as_ref().map_or(INBOX, String::as_ref)
     }
 
+    #[instrument(skip(self))]
     pub async fn load_folder(&self) -> color_eyre::Result<Envelopes> {
+        let folder = self.folder_or_default();
+        info!("loading folder {folder}");
         let options = ListEnvelopesOptions {
             page_size: DEFAULT_PAGE_SIZE,
             page: 0,
@@ -68,17 +78,20 @@ impl MailClient {
         };
         let envelopes = self
             .backend
-            .list_envelopes(self.folder_or_default(), options)
+            .list_envelopes(folder, options)
             .await
             .wrap_err("cannot list envelopes")?;
         Ok(envelopes)
     }
 
+    #[instrument(skip(self))]
     pub async fn load_messages(&self, id: &str) -> color_eyre::Result<Messages> {
         let id = Id::single(id);
+        let folder = self.folder_or_default();
+        info!("loading messages for {id} in folder {folder}");
         let emails = self
             .backend
-            .get_messages(self.folder_or_default(), &id)
+            .get_messages(folder, &id)
             .await
             .wrap_err("cannot load messages")?;
         Ok(emails)
