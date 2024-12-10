@@ -1,4 +1,4 @@
-use color_eyre::eyre::{eyre, WrapErr};
+use color_eyre::eyre::WrapErr;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use email::{
     email::envelope::Envelopes,
@@ -183,9 +183,7 @@ impl App {
         let id = self.envelopes[index].id.clone();
         let messages = self.mail_client.load_messages(&id).await?;
         if let Some(message) = messages.first() {
-            let body = message
-                .raw()
-                .map_err(|err| eyre!("cannot get raw message: {}", err))?;
+            let body = message.raw().wrap_err("cannot get raw message")?;
             self.body = String::from_utf8_lossy(body).into_owned();
         }
         Ok(())

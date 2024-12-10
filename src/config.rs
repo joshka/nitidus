@@ -1,7 +1,7 @@
 use std::{path::PathBuf, process::exit, sync::OnceLock};
 
 use clap::{Parser, Subcommand};
-use color_eyre::eyre::eyre;
+use color_eyre::eyre::{eyre, OptionExt};
 use directories::ProjectDirs;
 use figment::{
     providers::{Env, Format, Serialized, Toml},
@@ -127,8 +127,7 @@ fn default_config_file() -> PathBuf {
 
 /// Returns the project directories.
 fn project_dirs() -> color_eyre::Result<ProjectDirs> {
-    ProjectDirs::from("net", "joshka", "nitidus")
-        .ok_or_else(|| eyre!("user home directory not found"))
+    ProjectDirs::from("net", "joshka", "nitidus").ok_or_eyre("user home directory not found")
 }
 
 /// Returns the path to the default himalaya configuration file.

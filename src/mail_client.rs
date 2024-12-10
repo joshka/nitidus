@@ -1,6 +1,6 @@
 use std::{path::PathBuf, sync::Arc};
 
-use color_eyre::eyre::{bail, eyre, Context};
+use color_eyre::eyre::{bail, eyre, Context, OptionExt};
 use email::{
     account::config::DEFAULT_PAGE_SIZE,
     backend::{Backend, BackendBuilder},
@@ -16,6 +16,7 @@ use email::{
 };
 use himalaya::config::TomlConfig;
 use pimalaya_tui::terminal::config::TomlConfig as _;
+use tracing::{info, instrument};
 
 use crate::config;
 
@@ -33,9 +34,8 @@ impl MailClient {
             .into_account_configs(account_name, |c: &Config, name| c.account(name).ok())
             .map_err(|err| {
                 eyre!(
-                    "cannot find account `{}` in config file: {}",
+                    "cannot find account `{}` in config file: {err}",
                     account_name.unwrap_or("default"),
-                    err
                 )
             })?;
 
@@ -70,7 +70,7 @@ impl MailClient {
             .backend
             .list_envelopes(self.folder_or_default(), options)
             .await
-            .map_err(|err| eyre!("cannot list envelopes: {}", err))?;
+            .wrap_err("cannot list envelopes")?;
         Ok(envelopes)
     }
 
@@ -80,22 +80,18 @@ impl MailClient {
             .backend
             .get_messages(self.folder_or_default(), &id)
             .await
-            .map_err(|err| eyre!("cannot get messages: {}", err))?;
+            .wrap_err("cannot load messages")?;
         Ok(emails)
     }
 }
 
+#[instrument]
 async fn load_config(path: Option<PathBuf>) -> color_eyre::Result<TomlConfig> {
-    let path =
-        path.ok_or_else(|| eyre!("config file not found, please run `himalaya` to create one"))?;
+    info!("loading himalaya config");
+    let path = path.ok_or_eyre("config file not found, please run `himalaya` to create one")?;
 
     let config = TomlConfig::from_paths_or_default(&[path])
         .await
-        .map_err(|err| {
-            eyre!(
-                "cannot load config file: {} (hint: run `himalaya` to create one)",
-                err,
-            )
-        })?;
+        .wrap_err("cannot load config file. (hint: run `himalaya` to create one)")?;
     Ok(config)
 }
