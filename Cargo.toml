@@ -18,8 +18,8 @@ figment = { version = "0.10.19", features = ["env", "toml"] }
 himalaya = { version = "1.0.0" }
 pimalaya-tui = { version = "0.2.1", features = ["keyring", "config"] }
 ratatui = "0.29.0"
-serde = "1.0.216"
-serde_with = "3.11.0"
+serde = "1.0.217"
+serde_with = "3.12.0"
 tokio = { version = "1.42.0", features = ["rt-multi-thread"] }
 toml = "0.8.19"
 tracing = "0.1.41"
