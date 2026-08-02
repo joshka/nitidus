@@ -1,14 +1,14 @@
 use std::{path::PathBuf, sync::Arc};
 
-use color_eyre::eyre::{bail, eyre, Context, OptionExt};
+use color_eyre::eyre::{Context, OptionExt, bail, eyre};
 use email::{
     account::config::DEFAULT_PAGE_SIZE,
     backend::{Backend, BackendBuilder},
     config::Config,
     email::{envelope::Envelopes, message::Messages},
     envelope::{
-        list::{ListEnvelopes, ListEnvelopesOptions},
         Id,
+        list::{ListEnvelopes, ListEnvelopesOptions},
     },
     folder::INBOX,
     imap::{ImapContext, ImapContextBuilder},

@@ -19,7 +19,7 @@ const LOG_FILE_NAME: &str = "nitidus.log";
 // pub fn init() -> color_eyre::Result<WorkerGuard> {
 pub fn init() -> color_eyre::Result<()> {
     use tracing_error::ErrorLayer;
-    use tracing_subscriber::{fmt, prelude::*, EnvFilter};
+    use tracing_subscriber::{EnvFilter, fmt, prelude::*};
 
     let app_config = config::get();
 

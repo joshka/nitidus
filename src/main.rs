@@ -10,7 +10,7 @@ mod mail_client;
 async fn main() -> color_eyre::Result<()> {
     color_eyre::install()?;
     config::init()?;
-    let _guard = logging::init()?;
+    logging::init()?;
 
     info!("starting nitidus");
     let mail_client = MailClient::init().await?;

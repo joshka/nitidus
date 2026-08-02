@@ -1,16 +1,16 @@
 use std::{path::PathBuf, process::exit, sync::OnceLock};
 
 use clap::{Parser, Subcommand};
-use color_eyre::eyre::{eyre, OptionExt};
+use color_eyre::eyre::{OptionExt, eyre};
 use directories::ProjectDirs;
 use figment::{
-    providers::{Env, Format, Serialized, Toml},
     Figment,
+    providers::{Env, Format, Serialized, Toml},
 };
 use himalaya::config::TomlConfig;
 use pimalaya_tui::terminal::config::TomlConfig as _;
 use serde::{Deserialize, Serialize};
-use serde_with::{serde_as, skip_serializing_none, DisplayFromStr, NoneAsEmptyString};
+use serde_with::{DisplayFromStr, NoneAsEmptyString, serde_as, skip_serializing_none};
 use tracing::level_filters::LevelFilter;
 
 static CONFIG: OnceLock<AppConfig> = OnceLock::new();
@@ -154,12 +154,9 @@ pub fn init() -> color_eyre::Result<()> {
         .merge(Serialized::defaults(cli.clone()))
         .extract::<AppConfig>()?;
 
-    match cli.command {
-        Some(Command::PrintDefaultConfig) => {
-            println!("{:#?}", config);
-            exit(0);
-        }
-        _ => (),
+    if let Some(Command::PrintDefaultConfig) = cli.command {
+        println!("{:#?}", config);
+        exit(0);
     }
 
     CONFIG
