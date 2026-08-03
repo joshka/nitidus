@@ -2717,7 +2717,7 @@ dependencies = [
 
 [[package]]
 name = "nitidus"
-version = "0.1.8"
+version = "0.1.9"
 dependencies = [
  "clap",
  "color-eyre",
