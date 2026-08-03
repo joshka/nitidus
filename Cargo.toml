@@ -6,7 +6,8 @@ repository = "https://github.com/joshka/nitidus"
 license = "MIT"
 documentation = "https://docs.rs/nitidus"
 version = "0.1.8"
-edition = "2021"
+edition = "2024"
+rust-version = "1.85.0"
 
 [dependencies]
 clap = { version = "4.5.27", features = ["derive"] }
