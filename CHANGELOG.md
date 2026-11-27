@@ -6,6 +6,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0](https://github.com/joshka/nitidus/compare/v0.1.8...v0.2.0) - 2026-11-27
+
+### Added
+
+- [**breaking**] reimagine nitidus on himalaya 3
+
+### Other
+
+- a README screenshot tape with a transparent background
+- update dependencies to their latest versions
+- add a screenshot and the tour to the README
+- run checks from in-repo workflows with locked actions
+- say the source is shared for ideas, not contributions
+- check the new minimum Rust version, 1.100
+- roadmap and decisions; local plans and overrides ignored
+- unit tests per module, rstest tables and insta buffer snapshots
+- review pass: coherent modules, small functions, data as tables
+- update edition to 2024 ([#91](https://github.com/joshka/nitidus/pull/91))
+
 ## [0.1.8](https://github.com/joshka/nitidus/compare/v0.1.7...v0.1.8) - 2024-03-12
 
 ### Other

@@ -5,7 +5,7 @@ description = "A TUI email client built on Himalaya"
 repository = "https://github.com/joshka/nitidus"
 license = "MIT"
 documentation = "https://docs.rs/nitidus"
-version = "0.1.8"
+version = "0.2.0"
 edition = "2024"
 rust-version = "1.100"
 
