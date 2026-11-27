@@ -12,6 +12,13 @@ These hold everywhere, ahead of any project detail below.
   be understood, bind it to a well-named local first.
 - **One way to fail per line.** Bind each fallible call's result to a named local instead of
   chaining several `?` in one expression, so an error points at one call.
+- **Data looks like data.** Key bindings, hints, help text and fixtures are tables (`const` arrays
+  of small structs or tuples), not code that builds them step by step. A `match` over a list of
+  cases dispatches with one line per arm to a function named for the case, so it reads as a table of
+  what happens.
+- **One concept per type.** A type owns one thing and its impls stay at one level of abstraction;
+  payloads shared by several variants become their own types (`MessageRef`, `Selection`) instead of
+  repeated fields. Prefer an enum to a `bool` parameter or a cluster of `bool` fields.
 - **Docs on every item.** Public and private, each saying something the name and signature don't.
   `missing_docs` and `missing_docs_in_private_items` enforce it; [docs](docs.md) says what to write.
 
@@ -38,8 +45,8 @@ These hold everywhere, ahead of any project detail below.
 - Give each module one concept, named for what it owns. No `utils.rs` or `types.rs` buckets.
 - Cut modules by feature, keeping a feature's types, helpers, and tests together, not by technical
   layer. Keep a helper used once next to its caller.
-- Keep files readable in one pass, around 200 lines including tests. Past that, check whether the
-  file owns more than one concept; don't split one clear algorithm to hit a number.
+- Keep files readable in one pass, around 200 to 400 lines including tests. Past that, check whether
+  the file owns more than one concept; don't split one clear algorithm to hit a number.
 - Make a function body read as the algorithm: name the steps as functions and call them in order.
   When a block needs a comment to say what it does, extract it and let the comment become its doc.
 - Write bodies as short paragraphs, one step each: setup, the operation, then the result. Put a

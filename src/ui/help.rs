@@ -1,117 +1,85 @@
-//! The key reference overlay.
+//! The key reference overlay, drawn from the keymap's own help table.
 
 use ratatui::prelude::*;
 use ratatui::widgets::{Clear, Widget};
 
+use super::layout::{cells, line};
 use super::theme;
 
-pub const KEYS: &[(&str, &[(&str, &str)])] = &[
-    (
-        "Move around",
-        &[
-            ("j k", "next / previous"),
-            ("g G", "first / last"),
-            ("tab h l", "switch pane"),
-            ("enter", "open"),
-            ("esc", "back / clear"),
-            ("n p", "next / prev (reader)"),
-        ],
-    ),
-    (
-        "Messages",
-        &[
-            ("s f", "toggle read / flag"),
-            ("a d", "archive / delete"),
-            ("m y", "move / copy to…"),
-            ("x V", "mark / mark all"),
-            ("T", "thread view"),
-        ],
-    ),
-    (
-        "Write",
-        &[
-            ("c", "compose"),
-            ("r R", "reply / reply all"),
-            ("F", "forward"),
-            ("e", "edit draft"),
-        ],
-    ),
-    (
-        "Read",
-        &[
-            ("o S", "open / save attachments"),
-            ("L B", "links / open in browser"),
-            ("H", "message source"),
-        ],
-    ),
-    (
-        "Mailboxes",
-        &[
-            ("/", "search"),
-            ("ctrl-r", "refresh"),
-            ("n R D", "new / rename / delete"),
-            ("A", "switch account"),
-            ("q", "quit"),
-        ],
-    ),
-];
+/// The panel's width.
+const WIDTH: u16 = 48;
 
-pub struct Help;
+/// The width of the key column.
+const KEY_WIDTH: usize = 8;
 
-impl Widget for Help {
+/// One help section: its title and each line's keys and description.
+pub struct HelpSection {
+    /// The section's title.
+    pub title: &'static str,
+
+    /// Each line: the keys, as typed, and what they do.
+    pub lines: Vec<(String, &'static str)>,
+}
+
+/// The help overlay.
+pub struct Help<'a>(pub &'a [HelpSection]);
+
+impl Help<'_> {
+    /// The lines the sections take: a title, the lines and a gap each, plus padding.
+    fn height(&self) -> u16 {
+        let lines: usize = self.0.iter().map(|section| section.lines.len() + 2).sum();
+        cells(lines + 2)
+    }
+}
+
+impl Widget for Help<'_> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let t = theme();
-        let rows: u16 = KEYS.iter().map(|(_, k)| k.len() as u16 + 2).sum::<u16>() + 2;
-        let w = 46.min(area.width);
-        let rect = Rect {
-            x: area.x + (area.width - w) / 2,
-            y: area.y + area.height.saturating_sub(rows) / 2,
-            width: w,
-            height: rows.min(area.height),
-        };
-        Clear.render(rect, buf);
-        buf.set_style(rect, t.base(t.header));
-        let inner = rect.inner(Margin::new(3, 1));
-        let mut y = inner.y;
-        for (section, keys) in KEYS {
-            if y >= inner.bottom() {
-                break;
-            }
-            Line::styled(
-                *section,
-                Style::new().fg(t.accent).add_modifier(Modifier::BOLD),
-            )
-            .render(
-                Rect {
-                    y,
-                    height: 1,
-                    ..inner
-                },
-                buf,
-            );
-            y += 1;
-            for (k, what) in *keys {
-                if y >= inner.bottom() {
-                    break;
-                }
-                Line::from(vec![
-                    Span::styled(
-                        format!("{k:>8}"),
-                        Style::new().fg(t.fg).add_modifier(Modifier::BOLD),
-                    ),
-                    Span::styled(format!("   {what}"), Style::new().fg(t.dim)),
-                ])
-                .render(
-                    Rect {
-                        y,
-                        height: 1,
-                        ..inner
-                    },
-                    buf,
-                );
-                y += 1;
-            }
-            y += 1;
+        let panel = self.panel(area);
+        Clear.render(panel, buf);
+        buf.set_style(panel, t.base(t.header));
+        let inner = panel.inner(Margin::new(3, 1));
+        let mut row = 0;
+        for section in self.0 {
+            render_section(section, inner, row, buf);
+            row += cells(section.lines.len()) + 2;
         }
     }
+}
+
+impl Help<'_> {
+    /// The panel, centred in `area`.
+    fn panel(&self, area: Rect) -> Rect {
+        let width = WIDTH.min(area.width);
+        let height = self.height().min(area.height);
+        let x = area.x + (area.width - width) / 2;
+        let y = area.y + (area.height - height) / 2;
+        Rect {
+            x,
+            y,
+            width,
+            height,
+        }
+    }
+}
+
+/// A section's title at `row`, then its lines.
+fn render_section(section: &HelpSection, area: Rect, row: u16, buf: &mut Buffer) {
+    let title = Style::new().fg(theme().accent).add_modifier(Modifier::BOLD);
+    Line::styled(section.title, title).render(line(area, row), buf);
+    for (offset, (keys, text)) in (1..).zip(&section.lines) {
+        key_line(keys, text).render(line(area, row + offset), buf);
+    }
+}
+
+/// One line: the keys right-aligned in a bold column, then what they do.
+fn key_line(keys: &str, text: &str) -> Line<'static> {
+    let t = theme();
+    Line::from(vec![
+        Span::styled(
+            format!("{keys:>KEY_WIDTH$}"),
+            Style::new().fg(t.fg).add_modifier(Modifier::BOLD),
+        ),
+        Span::styled(format!("   {text}"), Style::new().fg(t.dim)),
+    ])
 }

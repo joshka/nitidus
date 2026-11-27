@@ -11,6 +11,9 @@
   surface goes into it.
 - Never show state by color alone. Pair it with a glyph or a word (`●` unread, `★` flagged, `✓`
   marked, "queued for sync").
+- Keys live in one table, `src/app/keymap.rs`: dispatch, the status bar's hints and the help sheet
+  all read it, so a binding changes in one place. Overlays (pickers, prompts, questions) handle
+  their own keys and answer with an `Outcome`.
 - Each component owns its state and draws itself through `Widget`. `App` routes keys and worker
   answers; it doesn't draw rows or know a component's layout.
 - Never block the event loop on the backend. Send the request to the worker, show what is running in

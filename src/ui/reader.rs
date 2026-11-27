@@ -1,294 +1,181 @@
-//! The message reader: a tinted header card above the body.
+//! The message reader: a tinted header card above the body, or the raw source.
+
+mod body;
+mod source;
 
 use ratatui::prelude::*;
 use ratatui::widgets::{Paragraph, Widget, Wrap};
 
-use super::theme;
+use self::body::{body_lines, reflow};
+use super::card::{Card, Field, Tone};
+use super::layout::{Placeholder, at_most_wide, below, cells};
+use super::movement::{Movement, Navigate};
+use super::{dates, theme};
 use crate::mail::{Address, Message};
 
+/// The widest the body is drawn: mail is mostly hard-wrapped near 72–78 columns.
+const MEASURE: u16 = 84;
+
+/// Lines a page key scrolls.
+const PAGE: u16 = 15;
+
+/// The reader's state.
 #[derive(Default)]
 pub struct Reader {
-    pub message: Option<Message>,
+    /// The message shown, `None` before one is read.
+    message: Option<Message>,
+
+    /// The message's raw source, once read.
+    source: Option<String>,
+
+    /// Which view is shown.
+    view: View,
+
+    /// Whether a message is being read.
     pub loading: bool,
-    pub scroll: u16,
-    pub focused: bool,
-    /// The raw source, shown instead of the message when `show_raw`.
-    pub raw: Option<String>,
-    pub show_raw: bool,
+
+    /// The first body line shown.
+    scroll: u16,
+}
+
+/// What the reader shows.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum View {
+    /// The decoded message.
+    #[default]
+    Message,
+
+    /// The raw source.
+    Source,
 }
 
 impl Reader {
-    /// Every http(s) and mailto link in the message, in order, deduplicated.
-    pub fn links(&self) -> Vec<String> {
-        let Some(m) = &self.message else {
-            return vec![];
-        };
-        let text = format!(
-            "{}\n{}",
-            m.text.as_deref().unwrap_or(""),
-            m.html.as_deref().unwrap_or("")
-        );
-        let mut out: Vec<String> = vec![];
-        for start in ["https://", "http://", "mailto:"] {
-            let mut rest = text.as_str();
-            while let Some(i) = rest.find(start) {
-                let tail = &rest[i..];
-                let end = tail
-                    .find(|c: char| {
-                        c.is_whitespace() || matches!(c, '"' | '\'' | '<' | '>' | ')' | ']')
-                    })
-                    .unwrap_or(tail.len());
-                let link = tail[..end].trim_end_matches(['.', ',', ';']).to_string();
-                if !out.contains(&link) {
-                    out.push(link);
-                }
-                rest = &tail[end..];
-            }
-        }
-        out
+    /// The message shown.
+    pub fn message(&self) -> Option<&Message> {
+        self.message.as_ref()
     }
 
+    /// Whether the message with `id` is shown.
+    pub fn shows(&self, id: &str) -> bool {
+        self.message
+            .as_ref()
+            .is_some_and(|message| message.id == id)
+    }
+
+    /// Clears the reader, ready for the next message.
     pub fn clear(&mut self) {
-        self.message = None;
-        self.raw = None;
-        self.show_raw = false;
+        *self = Self::default();
+    }
+
+    /// Shows a message just read.
+    pub fn show(&mut self, message: Message) {
+        self.message = Some(message);
+        self.loading = false;
+    }
+
+    /// Keeps a source just read, for the source view.
+    pub fn set_source(&mut self, source: String) {
+        self.source = Some(source);
+    }
+
+    /// Switches between the message and its source, answering whether the source still needs
+    /// reading.
+    pub fn toggle_source(&mut self) -> bool {
+        self.view = match self.view {
+            View::Message => View::Source,
+            View::Source => View::Message,
+        };
         self.scroll = 0;
+        self.view == View::Source && self.source.is_none()
     }
 
-    pub fn scroll_by(&mut self, delta: i32) {
-        self.scroll = (i32::from(self.scroll) + delta).max(0) as u16;
+    /// Whether the source view is shown.
+    pub fn showing_source(&self) -> bool {
+        self.view == View::Source
     }
 }
 
-fn pretty_date(raw: &str) -> String {
-    chrono::DateTime::parse_from_rfc3339(raw)
-        .or_else(|_| chrono::DateTime::parse_from_rfc2822(raw))
-        .map_or_else(
-            |_| raw.to_string(),
-            |d| {
-                d.with_timezone(&chrono::Local)
-                    .format("%a, %e %b %Y  %H:%M")
-                    .to_string()
-            },
-        )
-}
-
-fn addresses(list: &[Address]) -> String {
-    list.iter()
-        .map(ToString::to_string)
-        .collect::<Vec<_>>()
-        .join(", ")
-}
-
-/// Joins hard-wrapped prose lines so narrow panes wrap cleanly. A line is
-/// joined to the next when it looks hard-wrapped (long, plain prose) and
-/// the next is plain prose too; quotes, lists and signatures stay as is.
-pub fn reflow(body: &str) -> String {
-    let plain = |l: &str| {
-        let t = l.trim_start();
-        !t.is_empty()
-            && !t.starts_with(['>', '-', '*', '#', '|'])
-            && !l.starts_with(' ')
-            && !t.chars().next().is_some_and(|c| c.is_ascii_digit())
-    };
-    let mut out = String::new();
-    let lines: Vec<&str> = body.lines().collect();
-    for (i, l) in lines.iter().enumerate() {
-        out.push_str(l.trim_end());
-        let join = l.len() >= 60 && plain(l) && lines.get(i + 1).is_some_and(|n| plain(n));
-        out.push(if join { ' ' } else { '\n' });
+impl Navigate for Reader {
+    fn navigate(&mut self, movement: Movement) -> bool {
+        self.scroll = movement.scroll(self.scroll, PAGE);
+        false
     }
-    out
-}
-
-fn body_lines(body: &str) -> Vec<Line<'static>> {
-    let t = theme();
-    let mut in_sig = false;
-    body.lines()
-        .map(|l| {
-            if l == "-- " || l == "--" {
-                in_sig = true;
-            }
-            let style = if in_sig {
-                Style::new().fg(t.faint)
-            } else if l.trim_start().starts_with('>') {
-                Style::new().fg(t.dim).add_modifier(Modifier::ITALIC)
-            } else if l.starts_with("## ") || l.starts_with("# ") {
-                Style::new().fg(t.accent).add_modifier(Modifier::BOLD)
-            } else {
-                Style::new().fg(t.fg)
-            };
-            if l.trim_start().starts_with('>') {
-                let rest = l
-                    .trim_start()
-                    .trim_start_matches('>')
-                    .trim_start()
-                    .to_string();
-                let depth = l.chars().filter(|c| *c == '>').count().min(4);
-                Line::from(vec![
-                    Span::styled("┃ ".repeat(depth), Style::new().fg(t.faint)),
-                    Span::styled(rest, style),
-                ])
-            } else {
-                Line::styled(l.to_string(), style)
-            }
-        })
-        .collect()
 }
 
 impl Widget for &mut Reader {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let t = theme();
         buf.set_style(area, t.base(t.reader));
-        if self.show_raw {
-            let inner = area.inner(Margin::new(3, 1));
-            let text = self.raw.as_deref().unwrap_or("Loading source…");
-            let title = Rect { height: 1, ..inner };
-            Line::styled(
-                "Message source",
-                Style::new().fg(t.accent).add_modifier(Modifier::BOLD),
-            )
-            .render(title, buf);
-            let body = Rect {
-                y: inner.y + 2,
-                height: inner.height.saturating_sub(2),
-                ..inner
-            };
-            let lines: Vec<Line> = text
-                .lines()
-                .map(|l| match l.split_once(':') {
-                    Some((k, v)) if !k.contains(' ') && !k.is_empty() => Line::from(vec![
-                        Span::styled(k.to_string(), Style::new().fg(t.accent)),
-                        Span::styled(format!(":{v}"), Style::new().fg(t.dim)),
-                    ]),
-                    _ => Line::styled(l.to_string(), Style::new().fg(t.dim)),
-                })
-                .collect();
-            let max = (lines.len() as u16).saturating_sub(body.height / 2);
-            self.scroll = self.scroll.min(max);
-            Paragraph::new(lines)
-                .wrap(Wrap { trim: false })
-                .scroll((self.scroll, 0))
-                .render(body, buf);
-            return;
-        }
-        let Some(m) = &self.message else {
-            let msg = if self.loading {
+        match (self.view, &self.message) {
+            (View::Source, _) => {
+                source::render(self.source.as_deref(), &mut self.scroll, area, buf);
+            }
+            (View::Message, Some(message)) => render_message(message, &mut self.scroll, area, buf),
+            (View::Message, None) => Placeholder(if self.loading {
                 "Loading…"
             } else {
                 "Select a message"
-            };
-            Line::styled(msg, Style::new().fg(t.faint))
-                .centered()
-                .render(
-                    Rect {
-                        y: area.y + area.height / 3,
-                        height: 1,
-                        ..area
-                    },
-                    buf,
-                );
-            return;
-        };
-
-        let h = &m.headers;
-        let mut meta: Vec<(&str, String)> =
-            vec![("From", addresses(&h.from)), ("To", addresses(&h.to))];
-        if !h.cc.is_empty() {
-            meta.push(("Cc", addresses(&h.cc)));
+            })
+            .render(area, buf),
         }
-        meta.push((
-            "Date",
-            h.date.as_deref().map(pretty_date).unwrap_or_default(),
-        ));
-        let attachments: Vec<&str> = m.attachments().collect();
-
-        let card_h = 3 + meta.len() as u16 + u16::from(!attachments.is_empty()) + 1;
-        let card = Rect {
-            height: card_h.min(area.height),
-            ..area
-        };
-        buf.set_style(card, Style::new().bg(t.header));
-        let inner = card.inner(Margin::new(3, 1));
-        let subject = h.subject.clone().unwrap_or_else(|| "(no subject)".into());
-        Line::styled(subject, Style::new().fg(t.fg).add_modifier(Modifier::BOLD))
-            .render(Rect { height: 1, ..inner }, buf);
-        let mut y = inner.y + 2;
-        for (k, v) in meta {
-            if y >= inner.bottom() {
-                break;
-            }
-            Line::from(vec![
-                Span::styled(format!("{k:>5}  "), Style::new().fg(t.faint)),
-                Span::styled(
-                    v,
-                    Style::new().fg(if k == "From" { t.accent } else { t.dim }),
-                ),
-            ])
-            .render(
-                Rect {
-                    y,
-                    height: 1,
-                    ..inner
-                },
-                buf,
-            );
-            y += 1;
-        }
-        if !attachments.is_empty() && y < inner.bottom() {
-            let mut spans = vec![Span::styled("       ", Style::new())];
-            for a in attachments {
-                spans.push(Span::styled(
-                    format!(" ⎘ {a} "),
-                    Style::new().fg(t.fg).bg(t.chip),
-                ));
-                spans.push(Span::raw(" "));
-            }
-            Line::from(spans).render(
-                Rect {
-                    y,
-                    height: 1,
-                    ..inner
-                },
-                buf,
-            );
-        }
-
-        let body_area = Rect {
-            y: card.bottom() + 1,
-            height: area.height.saturating_sub(card_h + 1),
-            ..area
-        }
-        .inner(Margin::new(3, 0));
-        // A readable measure: mail is mostly hard-wrapped near 72-78 columns.
-        let body_area = Rect {
-            width: body_area.width.min(84),
-            ..body_area
-        };
-        let text = m.body(body_area.width as usize);
-        let lines = body_lines(&reflow(&text));
-        let max = (lines.len() as u16).saturating_sub(body_area.height / 2);
-        self.scroll = self.scroll.min(max);
-        Paragraph::new(lines)
-            .wrap(Wrap { trim: false })
-            .scroll((self.scroll, 0))
-            .render(body_area, buf);
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::reflow;
+/// The header card, then the body below it.
+fn render_message(message: &Message, scroll: &mut u16, area: Rect, buf: &mut Buffer) {
+    let card = card(message);
+    let height = card.height().min(area.height);
+    card.render(Rect { height, ..area }, buf);
+    let body = at_most_wide(below(area, height + 1).inner(Margin::new(3, 0)), MEASURE);
+    let lines = body_lines(&reflow(&message.body(usize::from(body.width))));
+    render_scrolled(lines, scroll, body, buf);
+}
 
-    #[test]
-    fn reflow_joins_prose_but_keeps_quotes_and_short_lines() {
-        let long = "a".repeat(30) + " " + &"b".repeat(35);
-        let body = format!(
-            "Hi,\n\n{long}\nnext line\n> quoted line that is long enough to be hard wrapped ok\n> more\nAda"
-        );
-        let out = reflow(&body);
-        assert!(out.contains(&format!("{long} next line")), "{out}");
-        assert!(out.contains("\n> more\n"), "{out}");
-        assert!(out.starts_with("Hi,\n\n"));
+/// The message's header card: subject, sender, recipients, date and attachments.
+fn card(message: &Message) -> Card<'static> {
+    let t = theme();
+    let headers = &message.headers;
+    let subject = headers
+        .subject
+        .clone()
+        .unwrap_or_else(|| "(no subject)".into());
+    let mut fields = vec![
+        field("From", &headers.from, Tone::Accent),
+        field("To", &headers.to, Tone::Plain),
+    ];
+    if !headers.cc.is_empty() {
+        fields.push(field("Cc", &headers.cc, Tone::Plain));
     }
+    let date = headers.date.as_deref().map_or_default(dates::long);
+    fields.push(Field {
+        label: "Date",
+        value: date,
+        tone: Tone::Plain,
+    });
+    let title = Line::styled(subject, Style::new().fg(t.fg).add_modifier(Modifier::BOLD));
+    Card {
+        title,
+        fields,
+        chips: message.attachments().map(str::to_owned).collect(),
+    }
+}
+
+/// A field listing addresses.
+fn field(label: &'static str, addresses: &[Address], tone: Tone) -> Field {
+    let value = addresses
+        .iter()
+        .map(ToString::to_string)
+        .collect::<Vec<_>>()
+        .join(", ");
+    Field { label, value, tone }
+}
+
+/// `lines` wrapped into `area`, scrolled by `scroll`, which is kept so half a screen still shows.
+fn render_scrolled(lines: Vec<Line<'static>>, scroll: &mut u16, area: Rect, buf: &mut Buffer) {
+    let max = cells(lines.len()).saturating_sub(area.height / 2);
+    *scroll = (*scroll).min(max);
+    Paragraph::new(lines)
+        .wrap(Wrap { trim: false })
+        .scroll((*scroll, 0))
+        .render(area, buf);
 }
