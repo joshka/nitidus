@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1](https://github.com/joshka/nitidus/compare/v0.2.0...v0.2.1) - 2026-11-27
+
+### Other
+
+- Add a compact mode to the message list
+- Install betamax through mise
+- Keep personal workflow out of the agent guide ([#98](https://github.com/joshka/nitidus/pull/98))
+
 ## [0.2.0](https://github.com/joshka/nitidus/compare/v0.1.8...v0.2.0) - 2026-11-27
 
 ### Added
