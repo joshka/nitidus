@@ -27,6 +27,9 @@ Read the convention that applies to the task:
 
 - Use jj. Start a described change for each independent review unit, and work in `work/<name>`
   workspaces rather than the root.
+- GitHub Actions are locked in `.github/workflows/actions.lock`. After changing any `uses:`, run
+  `gh actions-lock` and commit both files. See [GitHub Actions](docs/github-actions.md). Never edit
+  or delete the lockfile by hand.
 - Fix warnings at their source. Suppress a lint only with `#[expect(lint, reason = "...")]`.
 - Show visible changes as recordings: add or update a tape in `tapes/`, run `just tape <name>`, and
   share the GIF or MP4 from `target/screens/`. Never commit the output.

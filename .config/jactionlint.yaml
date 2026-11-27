@@ -1,0 +1,8 @@
+# Configuration for jactionlint; its schema comes from `jactionlint --print-config-schema`.
+
+# Local workspaces and scratch files, which may hold other repositories.
+paths:
+  "work/**":
+    ignore: [".*"]
+  "tmp/**":
+    ignore: [".*"]

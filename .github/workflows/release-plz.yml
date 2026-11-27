@@ -5,47 +5,55 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+# A new run waits for a running release rather than cancelling it.
+concurrency:
+  group: release-plz-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
+  # Publishes a version to crates.io once its release PR is merged; does nothing otherwise.
   release:
     name: Release-plz release
     if: ${{ github.repository_owner == 'joshka' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
     environment: release
     permissions:
-      contents: write
-      id-token: write
+      contents: write # tag the release and create the GitHub release
+      id-token: write # trusted publishing to crates.io
     steps:
-      - &checkout
-        name: Checkout repository
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v6.1.0
         with:
           fetch-depth: 0
           persist-credentials: false
-      - &install-rust
-        name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+      # The runner image already has stable Rust, which release-plz uses.
       - name: Run release-plz (release)
-        uses: release-plz/action@v0.5
+        uses: release-plz/action@v0.5.148
         with:
           command: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  # Opens or updates the release PR with the next version and its changelog.
   release_pr:
     name: Release-plz PR
     if: ${{ github.repository_owner == 'joshka' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
     permissions:
-      contents: write
-      pull-requests: write
-    concurrency:
-      group: release-plz-${{ github.ref }}
-      cancel-in-progress: false
+      contents: write # push the release branch
+      pull-requests: write # open or update the release PR
     steps:
-      - *checkout
-      - *install-rust
+      - uses: actions/checkout@v6.1.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      # The runner image already has stable Rust, which release-plz uses.
       - name: Run release-plz (release-pr)
-        uses: release-plz/action@v0.5
+        uses: release-plz/action@v0.5.148
         with:
           command: release-pr
         env:
