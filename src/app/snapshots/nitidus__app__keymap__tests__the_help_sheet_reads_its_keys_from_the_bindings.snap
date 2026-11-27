@@ -13,6 +13,7 @@ expression: "help.join(\"\\n\")"
        m y  move / copy to…
        x V  mark / mark all
          T  thread view
+         C  compact rows
          c  compose
        r R  reply / reply all
          F  forward

@@ -83,6 +83,7 @@ const GLOBAL: &[Binding] = &[
     bind(&[ch('/')], Action::General(General::Search)),
     bind(&[ch('A')], Action::General(General::Accounts)),
     bind(&[ch('T')], Action::General(General::ToggleThreads)),
+    bind(&[ch('C')], Action::General(General::ToggleCompact)),
     bind(&[named(KeyCode::Esc)], Action::General(General::Back)),
     bind(&[ch('c')], Action::Compose(ComposeAction::New)),
 ];
@@ -340,6 +341,11 @@ const HELP: &[(&str, &[HelpLine])] = &[
                 Context::List,
                 &[Action::General(General::ToggleThreads)],
                 "thread view",
+            ),
+            (
+                Context::List,
+                &[Action::General(General::ToggleCompact)],
+                "compact rows",
             ),
         ],
     ),

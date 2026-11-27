@@ -1,4 +1,5 @@
-//! One envelope's two-line row: sender and marks over the subject, selection shown by background.
+//! One envelope's row, selection shown by background: sender and marks over the subject, or all on
+//! one line when compact.
 
 use ratatui::prelude::*;
 use ratatui::widgets::Widget;
@@ -9,6 +10,9 @@ use crate::ui::{dates, theme};
 
 /// The deepest thread level indented; deeper replies line up with it.
 const MAX_INDENT_DEPTH: u8 = 4;
+
+/// The widest a compact row's sender column grows.
+const MAX_SENDER_WIDTH: u16 = 24;
 
 /// How one row is shown.
 #[derive(Clone, Copy)]
@@ -21,9 +25,12 @@ pub struct RowState {
 
     /// Its thread depth.
     pub depth: u8,
+
+    /// Whether it takes one line instead of two.
+    pub compact: bool,
 }
 
-/// An envelope's row, drawn into `area` (two lines).
+/// An envelope's row, drawn into `area` (two lines, or one when compact).
 pub struct Row<'a> {
     /// The envelope.
     pub envelope: &'a Envelope,
@@ -49,11 +56,33 @@ impl Widget for Row<'_> {
         buf.set_style(area, Style::new().bg(self.background()));
         self.draw_edge(area, buf);
         let text = indented(area, self.state.depth);
+        let marks = Line::from(self.marks()).right_aligned();
+        if self.state.compact {
+            self.render_compact(line(text, 0), marks, buf);
+            return;
+        }
         Line::from(self.sender()).render(line(text, 0), buf);
-        Line::from(self.marks())
-            .right_aligned()
-            .render(line(text, 0), buf);
+        marks.render(line(text, 0), buf);
         self.subject().render(line(text, 1), buf);
+    }
+}
+
+impl Row<'_> {
+    /// Sender, subject and marks on one line: the sender in a column a third of the width (at
+    /// most [`MAX_SENDER_WIDTH`]), the subject cut short before the marks.
+    fn render_compact(&self, area: Rect, marks: Line<'static>, buf: &mut Buffer) {
+        let marks_width = u16::try_from(marks.width()).unwrap_or(u16::MAX);
+        let sender_width = (area.width / 3).min(MAX_SENDER_WIDTH);
+        let [sender, subject, date] = Layout::horizontal([
+            Constraint::Length(sender_width),
+            Constraint::Fill(1),
+            Constraint::Length(marks_width),
+        ])
+        .spacing(1)
+        .areas(area);
+        Line::from(self.sender()).render(sender, buf);
+        Line::from(self.subject_span()).render(subject, buf);
+        marks.render(date, buf);
     }
 }
 
@@ -144,19 +173,23 @@ impl Row<'_> {
         spans
     }
 
-    /// The subject line, bright when unread or set off.
+    /// The subject line, indented under the sender.
     fn subject(&self) -> Line<'static> {
+        Line::from(vec![Span::raw("  "), self.subject_span()])
+    }
+
+    /// The subject, bright when unread or set off.
+    fn subject_span(&self) -> Span<'static> {
         let t = theme();
         let color = if self.lit() || self.unread() {
             t.fg
         } else {
             t.dim
         };
-        let subject = Span::styled(
+        Span::styled(
             self.envelope.subject_or_placeholder().to_owned(),
             Style::new().fg(color),
-        );
-        Line::from(vec![Span::raw("  "), subject])
+        )
     }
 }
 
