@@ -1,0 +1,22 @@
+# Markdown lint configuration: https://rumdl.dev/
+# Rules are configured by name rather than by MD number.
+
+[global]
+exclude = ["CLAUDE.md", "CLAUDE.local.md", "AGENTS.override.md", "CHANGELOG.md", "target", "work", "tmp"]
+
+[line-length]
+line-length = 100
+reflow = true
+reflow-mode = "normalize"
+# Keep tables aligned even when their contents require wider lines.
+tables = false
+# Code blocks quote commands and output verbatim; wrapping them would change what they show.
+code-blocks = false
+
+[table-format]
+enabled = true
+style = "aligned"
+aligned-delimiter = true
+
+[table-pipe-style]
+style = "leading_and_trailing"

@@ -1,0 +1,9 @@
+# Configuration for https://github.com/crate-ci/typos
+
+[files]
+extend-exclude = ["target", "work", "tmp"]
+
+[default.extend-words]
+# The Rust TUI library this is built on.
+Ratatui = "Ratatui"
+ratatui = "ratatui"

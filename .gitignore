@@ -1,3 +1,8 @@
 /target
 /.data
 nitidus.log
+/target/screens
+/docs/screens
+.rumdl_cache
+/work
+/tmp

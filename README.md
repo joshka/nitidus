@@ -13,20 +13,60 @@ This app is a front end to the CLI mail client [Himalaya], and is based on a Rus
 
 ## Running
 
-This is pretty much just a PoC right now, so install himalaya, run it once to generate a config and
-then run this. Check the command line params with `--help`
+nitidus uses [Himalaya] 3 as a library, so it reads the same config as the `himalaya` CLI
+(`~/.config/himalaya/config.toml`) and supports every backend Himalaya does (IMAP, JMAP, Gmail,
+Microsoft Graph, Maildir, mbox, pimdir).
 
-```text
-A TUI email client
-
-Usage: nitidus [OPTIONS]
-
-Options:
-  -c, --config <FILE>           A path to a himalaya configuration file
-  -a, --account-name <ACCOUNT>  The name of the account to use from the configuration file
-  -f, --folder <FOLDER>         The mail folder to open
-  -h, --help                    Print help
-  -V, --version                 Print version
+```shell
+nitidus                  # default account
+nitidus -a work -m Archive
+nitidus demo             # a fake Maildir account, no login needed
 ```
 
-![demo](https://github.com/joshka/nitidus/assets/381361/889b752f-b5e2-4393-bb19-071190c9fc25)
+## What it does
+
+- Every backend Himalaya supports, configured once in Himalaya's config; switch accounts with `A`.
+- Mailboxes: browse, create, rename, delete. The envelope list pages through the whole mailbox,
+  groups by date or by thread (`T`), and picks up new mail every 30 seconds.
+- Reading: plain text and HTML, quoted text set off, attachments to open or save, a link picker, the
+  raw source, and opening the HTML part in a browser.
+- Triage: read, flag, archive, delete (to the trash; asks first inside it), move or copy through a
+  mailbox picker, all on one message or on several marked ones.
+- Writing: compose, reply, reply all, forward and reopen drafts in `$EDITOR`, then review, attach
+  files, and send or save. Sending goes through Himalaya (SMTP, JMAP, Gmail, Graph).
+- Themes: dark and light (`--theme`), with text contrast checked by a test.
+
+## Keys
+
+| Keys                           | Action                                                                 |
+| ------------------------------ | ---------------------------------------------------------------------- |
+| `j` `k` `g` `G`, `tab` `h` `l` | move, switch pane                                                      |
+| `enter`, `esc`                 | open, back / clear marks / clear search                                |
+| `s` `f`                        | toggle read / flag                                                     |
+| `a` `d` `m` `y`                | archive, delete, move to…, copy to…                                    |
+| `x` (or `space`), `V`          | mark, mark all                                                         |
+| `c`, `r` `R`, `F`, `e`         | compose, reply / reply all, forward, edit a draft                      |
+| `o` `S`                        | open / save attachments                                                |
+| `L` `B` `H`                    | links, open HTML in a browser, message source                          |
+| `/`, `ctrl-r`, `T`             | search (`from:ada is:unread has:attachment date:2d`), refresh, threads |
+| `n` `R` `D` (mailbox pane)     | new, rename, delete mailbox                                            |
+| `A`, `?`, `q`                  | switch account, help, quit                                             |
+
+The composer opens your `$VISUAL` / `$EDITOR` on a plain file: headers (`To:`, `Cc:`, `Bcc:`,
+`Subject:`, and `Attach:` lines naming files), a blank line, then the body. Back in nitidus you
+review it, then `s` sends, `d` saves a draft, `a` attaches, `e` edits again, `x` discards.
+
+## The demo
+
+`nitidus demo` writes two fake Maildir accounts to a temporary directory and starts an SMTP server
+on localhost that accepts everything. Mail sent to the demo address (`rae@nitidus.test`) comes back
+to its inbox, so the whole send path runs with no real server.
+
+## Screenshots
+
+Recorded with [betamax](https://github.com/joshka/betamax) from `tapes/*.tape` against
+`nitidus demo`. Output goes to `target/screens/` (not committed):
+
+```shell
+cargo build && for t in tapes/*.tape; do betamax run "$t"; done
+```

@@ -1,36 +1,55 @@
 [package]
 name = "nitidus"
 authors = ["Joshka"]
-description = "A TUI email client"
+description = "A TUI email client built on Himalaya"
 repository = "https://github.com/joshka/nitidus"
 license = "MIT"
 documentation = "https://docs.rs/nitidus"
 version = "0.1.8"
 edition = "2024"
-rust-version = "1.85.0"
+rust-version = "1.100"
 
 [dependencies]
-clap = { version = "4.5.27", features = ["derive"] }
-color-eyre = { version = "0.6.3", features = ["issue-url"] }
-crossterm = "0.28.1"
-directories = "6.0.0"
-email-lib = { version = "0.26.4", features = ["imap", "keyring"] }
-figment = { version = "0.10.19", features = ["env", "toml"] }
-himalaya = { version = "1.1.0" }
-pimalaya-tui = { version = "0.2.2", features = ["keyring", "config"] }
-ratatui = "0.29.0"
-serde = "1.0.217"
-serde_with = "3.12.0"
-tokio = { version = "1.43.0", features = ["rt-multi-thread"] }
-toml = "0.8.19"
-tracing = "0.1.41"
-tracing-appender = "0.2.3"
-tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
-tracing-error = "0.2.1"
-tracing-log = "0.2.0"
-tui-logger = { version = "0.14.4", default-features = false, features = ["tracing-support"] }
-secret-lib = "1.0.0"
+anyhow = "1"
+chrono = { version = "0.4", default-features = false, features = ["clock", "serde"] }
+clap = { version = "4.5", features = ["derive"] }
+himalaya = "3.0.0"
+html2text = "0.17"
+io-pimdir = { version = "1.0.0", default-features = false, features = ["client", "mail"] }
+pimalaya-cli = { version = "0.8.1", default-features = false }
+ratatui = "0.30"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tempfile = "3"
 
-# email-lib = { git = "https://git.sr.ht/~soywod/pimalaya", default-features = false }
-# mail-builder = "0.3.1"
-# tokio-rustls = "0.25.0"
+[lints.rust]
+missing_docs = "warn"
+unsafe_code = "forbid"
+unused_qualifications = "warn"
+let_underscore_drop = "warn"
+rust_2018_idioms = { level = "warn", priority = -1 }
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+# Suppress with #[expect(lint, reason = "...")], never #[allow].
+allow_attributes = "warn"
+allow_attributes_without_reason = "warn"
+# Short functions that read as the algorithm (threshold in clippy.toml).
+cognitive_complexity = "warn"
+# foo.rs with foo/, never mod.rs.
+mod_module_files = "warn"
+# Private items get docs too.
+missing_docs_in_private_items = "warn"
+# No unwrap outside tests; errors keep their cause.
+unwrap_used = "warn"
+get_unwrap = "warn"
+map_err_ignore = "warn"
+let_underscore_must_use = "warn"
+# Adding an enum variant must reach every match on it.
+wildcard_enum_match_arm = "warn"
+dbg_macro = "warn"
+# The terminal belongs to the UI; only `main` may print (the demo's config path).
+print_stdout = "warn"
+print_stderr = "warn"
+todo = "warn"
+unimplemented = "warn"

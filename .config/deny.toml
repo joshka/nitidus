@@ -1,0 +1,32 @@
+# Configuration for https://github.com/EmbarkStudios/cargo-deny
+
+[advisories]
+yanked = "deny"
+
+[licenses]
+# Permissive licenses that something needs. docs/conventions/dependencies.md says which to ask about.
+allow = [
+  "Apache-2.0",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  # The Mozilla CA bundle that rustls-platform-verifier ships, a permissive data license.
+  "CDLA-Permissive-2.0",
+  "ISC",
+  "MIT",
+  "Unicode-3.0",
+  "Zlib",
+]
+
+# ring's license file holds its own ISC terms and BoringSSL's OpenSSL-derived ones, which
+# cargo-deny can't read on its own.
+[[licenses.clarify]]
+crate = "ring"
+expression = "MIT AND ISC AND OpenSSL"
+license-files = [{ path = "LICENSE", hash = 0xbd0eed23 }]
+
+[bans]
+multiple-versions = "warn"
+
+[sources]
+unknown-git = "deny"
+unknown-registry = "deny"

@@ -1,0 +1,10 @@
+# Configuration for https://nexte.st/
+
+[profile.default]
+# Flag slow tests rather than letting them hang.
+slow-timeout = { period = "10s", terminate-after = 6 }
+
+[profile.ci]
+fail-fast = false
+status-level = "fail"
+final-status-level = "slow"

@@ -1,0 +1,9 @@
+# Configuration for https://doc.rust-lang.org/clippy/
+# Stays at the root: clippy only finds it here or through CLIPPY_CONF_DIR.
+
+max-fn-params-bools = 0
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
+allow-print-in-tests = true
+# Keep functions small enough to read at a glance.
+too-many-lines-threshold = 25
