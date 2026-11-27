@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # Every offline check: formatting, clippy, tests, rustdoc, cargo-deny, machete, typos, Markdown
+  # and workflow lint. The same `just ci` runs locally.
+  checks:
+    name: Checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6.1.0
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@v5.2.9
+        with:
+          version: 2026.11.5
+          cache: false
+          install: false
+          env: false
+          add_shims_to_path: false
+      - name: Install repository tools
+        run: |
+          mise trust .config/mise.toml
+          mise install
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - run: mise exec -- just ci
+
+  # The tests on macOS too. Windows is left out: Maildir file names hold a colon, which Windows
+  # refuses, so the demo account can't exist there.
+  test:
+    name: Test (macOS)
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6.1.0
+        with:
+          persist-credentials: false
+      - run: rustup toolchain install stable --profile minimal
+      - run: cargo +stable test --all-features --locked
+
+  # Checks that .github/workflows/actions.lock matches the workflows. To add or update an action, or
+  # fix a failure here, see docs/github-actions.md.
+  lockfile:
+    name: Actions lockfile
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v6.1.0
+        with:
+          persist-credentials: false
+      - run: gh extension install github/gh-actions-lock --pin v0.5.1
+      - run: gh actions-lock --verify
+
+  required:
+    name: required
+    if: ${{ always() }}
+    needs: [checks, test, lockfile]
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    steps:
+      - name: Fail unless every job succeeded
+        if: >-
+          ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+          || contains(needs.*.result, 'skipped') }}
+        run: exit 1

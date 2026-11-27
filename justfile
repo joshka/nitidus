@@ -39,7 +39,7 @@ lint-md:
     rumdl check .
 
 # Run every check that works offline.
-ci: fmt-check clippy test rustdoc deny machete typos lint-md
+ci: fmt-check clippy test rustdoc deny machete typos lint-md lint-actions
 
 # Run the fake demo account: no login, a local SMTP server that accepts everything.
 demo *args:
@@ -55,3 +55,8 @@ tape name: (build)
 
 build:
     cargo build --locked
+
+# Check workflow syntax and security.
+lint-actions:
+    jactionlint --config-file .config/jactionlint.yaml
+    zizmor --no-progress --strict-collection --persona pedantic .github
