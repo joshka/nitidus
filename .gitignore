@@ -6,3 +6,6 @@ nitidus.log
 .rumdl_cache
 /work
 /tmp
+/.plans
+CLAUDE.local.md
+AGENTS.override.md
