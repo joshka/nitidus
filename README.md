@@ -8,9 +8,11 @@ A terminal mail client written in Rust, on [Himalaya] and [Ratatui].
 
 ![nitidus showing the demo inbox: mailboxes on the left, messages grouped by date, and the open message on the right](https://github.com/joshka/nitidus/releases/download/readme-assets/nitidus.png)
 
-A
-[captioned tour](https://github.com/joshka/nitidus/releases/download/readme-assets/nitidus-tour.mp4)
-(MP4, 95 seconds) walks through each feature on the demo account.
+A captioned tour of each feature on the demo account (95 seconds):
+
+<!-- GitHub plays an attached video inline only from a bare URL on its own line. -->
+<!-- rumdl-disable-next-line MD034 -->
+https://github.com/user-attachments/assets/26e6ffcb-067c-4885-be8f-81f25b8a5bfe
 
 ## Why the name?
 
