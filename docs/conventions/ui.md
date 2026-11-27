@@ -23,3 +23,6 @@
 - Lay out for 110 columns and up as three panes, and for narrower terminals as one pane at a time.
 - Check a visible change by recording it with betamax from `nitidus demo`, never from a real
   account. Keep tapes in `tapes/` and their output in the ignored `target/screens/`.
+- Show the keys pressed (`Set KeyboardOverlay Keys`) and caption each step (`Caption "..."`) in a
+  tape made for a PR, so a reviewer can follow it without the tape beside it. betamax comes from
+  `.config/mise.toml`.

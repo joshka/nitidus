@@ -13,5 +13,6 @@ rust = [
 "aqua:zizmorcore/zizmor" = "1.32"
 "cargo:cargo-insta" = "1.49"
 "aqua:rvben/rumdl" = "0.3"
+"github:joshka/betamax" = { version = "latest", version_prefix = "betamax-v" }
 "github:bnjbvr/cargo-machete" = "0.10"
 "github:nextest-rs/nextest" = { version = "cargo-nextest-0.9.152", bin = "cargo-nextest" }
