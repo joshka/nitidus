@@ -6,6 +6,12 @@ A terminal mail client written in Rust, on [Himalaya] and [Ratatui].
 > nitidus is an experiment built quickly with AI coding agents, shared for the ideas rather than as
 > a client to rely on. Contributions aren't being sought; see [CONTRIBUTING.md](CONTRIBUTING.md).
 
+![nitidus showing the demo inbox: mailboxes on the left, messages grouped by date, and the open message on the right](https://github.com/joshka/nitidus/releases/download/readme-assets/nitidus.png)
+
+A
+[captioned tour](https://github.com/joshka/nitidus/releases/download/readme-assets/nitidus-tour.mp4)
+(MP4, 95 seconds) walks through each feature on the demo account.
+
 ## Why the name?
 
 This app is a front end to the CLI mail client [Himalaya], and is based on a Rust TUI crate named
