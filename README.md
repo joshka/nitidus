@@ -1,6 +1,10 @@
 # nitidus
 
-A small TUI email client written in Rust.
+A terminal mail client written in Rust, on [Himalaya] and [Ratatui].
+
+> [!NOTE]
+> nitidus is an experiment built quickly with AI coding agents, shared for the ideas rather than as
+> a client to rely on. Contributions aren't being sought; see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Why the name?
 
