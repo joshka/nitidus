@@ -41,3 +41,25 @@ fn addresses(value: &str) -> Vec<Address> {
 fn bare(email: String) -> Address {
     Address { name: None, email }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_saved_draft_reads_back_its_headers_and_body() {
+        let raw = b"From: Rae <rae@x.test>\r\nTo: ada@x.test, \"Hopper, Grace\" <g@x.test>\r\nSubject: Plan\r\nX-Other: ignored\r\n\r\nHalf written\r\n";
+
+        let template = Template::from_saved(raw);
+
+        let to: Vec<&str> = template.to.iter().map(|a| a.email.as_str()).collect();
+        assert_eq!(
+            (to, template.subject.as_deref(), template.body.as_str()),
+            (
+                vec!["ada@x.test", "\"Hopper, Grace\" <g@x.test>"],
+                Some("Plan"),
+                "Half written\n"
+            )
+        );
+    }
+}

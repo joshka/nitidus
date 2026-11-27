@@ -60,3 +60,20 @@ impl Notice {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_fresh_notice_shows_as_its_kind() {
+        let info = Notice::info("Sent");
+        let error = Notice::error("Failed");
+
+        assert!(!info.expired());
+        assert!(matches!(
+            (info.status(), error.status()),
+            (Status::Info("Sent"), Status::Error("Failed"))
+        ));
+    }
+}

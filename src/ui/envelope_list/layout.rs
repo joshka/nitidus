@@ -106,16 +106,60 @@ pub enum Banding {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
 
+    /// Two rows today and one older, with another page to come: tops 2, 5 and 10, total 15.
+    fn layout() -> ListLayout {
+        ListLayout::new(
+            [Section::Today, Section::Today, Section::Older],
+            Banding::BySection,
+            Paging::More,
+        )
+    }
+
     #[test]
-    fn bands_open_each_section_and_the_selection_brings_its_band() {
-        let sections = [Section::Today, Section::Today, Section::Older];
+    fn bands_open_each_section_and_the_more_note_follows_the_rows() {
+        let layout = layout();
 
-        let layout = ListLayout::new(sections, Banding::BySection, Paging::Complete);
+        assert_eq!(
+            (layout.tops.as_slice(), layout.more, layout.total),
+            ([2, 5, 10].as_slice(), Some(13), 15)
+        );
+    }
 
-        assert_eq!(layout.tops, [2, 5, 10]);
-        assert_eq!(layout.scroll_to(2, 9, 4), 8);
-        assert_eq!(layout.sticky(3), Some(Section::Today));
+    #[rstest]
+    #[case::already_in_view(1, 0, 8, 0)]
+    #[case::below_scrolls_down(1, 0, 4, 4)]
+    #[case::opening_a_section_brings_its_band(2, 12, 4, 8)]
+    #[case::the_last_row_brings_the_more_note(2, 0, 4, 11)]
+    #[case::above_scrolls_up(0, 6, 4, 0)]
+    fn the_selection_scrolls_into_view(
+        #[case] selected: usize,
+        #[case] offset: usize,
+        #[case] height: usize,
+        #[case] expected: usize,
+    ) {
+        assert_eq!(layout().scroll_to(selected, offset, height), expected);
+    }
+
+    #[rstest]
+    #[case::at_the_top(0, None)]
+    #[case::past_the_first_band(3, Some(Section::Today))]
+    #[case::past_the_second(9, Some(Section::Older))]
+    fn the_band_scrolled_past_sticks(#[case] offset: usize, #[case] sticky: Option<Section>) {
+        assert_eq!(layout().sticky(offset), sticky);
+    }
+
+    #[test]
+    fn the_thread_view_has_no_bands() {
+        let layout = ListLayout::new(
+            [Section::Today, Section::Older],
+            Banding::None,
+            Paging::Complete,
+        );
+
+        assert_eq!((layout.tops, layout.bands.len()), (vec![0, 3], 0));
     }
 }

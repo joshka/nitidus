@@ -161,3 +161,75 @@ impl Sidebar {
         Line::from(account).render(area, buf);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use insta::assert_snapshot;
+    use rstest::rstest;
+
+    use super::*;
+    use crate::mail::fixtures::mailbox;
+    use crate::ui::test_support::render;
+
+    fn sidebar() -> Sidebar {
+        let mut sidebar = Sidebar::new("demo".into());
+        sidebar.set_mailboxes(vec![
+            mailbox("Trash", Some("trash")),
+            mailbox("Projects", None),
+            mailbox("INBOX", Some("inbox")),
+            mailbox("Archive", None),
+            mailbox("Sent", Some("sent")),
+        ]);
+        sidebar
+    }
+
+    #[test]
+    fn mailboxes_sort_by_role_with_the_inbox_open_and_the_account_below() {
+        let mut sidebar = sidebar();
+        sidebar.focus = PaneFocus::Focused;
+        sidebar.unread = 3;
+
+        let screen = render(22, 10, |area, buf| (&sidebar).render(area, buf));
+
+        assert_snapshot!(screen, @"
+
+         MAILBOXES
+
+        ▌↓ INBOX          3
+         ↑ Sent
+         ▤ Archive
+         ▫ Projects
+         ✕ Trash
+         ● demo
+        ");
+    }
+
+    #[rstest]
+    #[case::down(Movement::Down, "Sent", true)]
+    #[case::up_at_the_top(Movement::Up, "INBOX", false)]
+    #[case::bottom(Movement::Bottom, "Trash", true)]
+    fn moving_opens_another_mailbox(
+        #[case] movement: Movement,
+        #[case] open: &str,
+        #[case] changed: bool,
+    ) {
+        let mut sidebar = sidebar();
+
+        let moved = sidebar.navigate(movement);
+
+        assert_eq!(
+            (sidebar.current().map(|m| m.name.as_str()), moved),
+            (Some(open), changed)
+        );
+    }
+
+    #[test]
+    fn a_role_finds_its_mailbox_by_name_when_the_backend_gives_none() {
+        let sidebar = sidebar();
+
+        assert_eq!(
+            sidebar.find(Role::Archive).map(|m| m.name.as_str()),
+            Some("Archive")
+        );
+    }
+}

@@ -69,3 +69,44 @@ impl Widget for &Prompt {
         Line::styled(self.hint.clone(), Style::new().fg(t.faint)).render(line(inner, 2), buf);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use insta::assert_snapshot;
+    use ratatui::crossterm::event::KeyCode;
+
+    use super::*;
+    use crate::ui::test_support::render;
+
+    #[test]
+    fn typing_edits_and_enter_answers_the_trimmed_text() {
+        let mut prompt = Prompt::new("Search", "from:", "hint");
+        for key in [
+            KeyCode::Char('a'),
+            KeyCode::Char('x'),
+            KeyCode::Backspace,
+            KeyCode::Char(' '),
+        ] {
+            prompt.handle(KeyEvent::from(key));
+        }
+
+        let answer = prompt.handle(KeyEvent::from(KeyCode::Enter));
+
+        assert!(matches!(answer, Outcome::Done(text) if text == "from:a"));
+    }
+
+    #[test]
+    fn the_field_shows_the_text_with_a_cursor_and_the_hint_below() {
+        let prompt = Prompt::new("New mailbox", "Receipts", "Name of the mailbox to create");
+
+        let screen = render(60, 9, |area, buf| (&prompt).render(area, buf));
+
+        assert_snapshot!(screen, @"
+        New mailbox
+
+         Receipts▏
+
+        Name of the mailbox to create
+        ");
+    }
+}

@@ -258,3 +258,31 @@ impl App {
         self.load_envelopes();
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use super::*;
+
+    #[rstest]
+    #[case(FocusMove::Next, Focus::Sidebar, Focus::List)]
+    #[case(FocusMove::Next, Focus::List, Focus::Reader)]
+    #[case(FocusMove::Next, Focus::Reader, Focus::Sidebar)]
+    #[case(FocusMove::Previous, Focus::Sidebar, Focus::Reader)]
+    #[case(FocusMove::Previous, Focus::List, Focus::Sidebar)]
+    #[case(FocusMove::Previous, Focus::Reader, Focus::List)]
+    #[case(FocusMove::Left, Focus::Sidebar, Focus::Sidebar)]
+    #[case(FocusMove::Left, Focus::List, Focus::Sidebar)]
+    #[case(FocusMove::Left, Focus::Reader, Focus::List)]
+    #[case(FocusMove::Right, Focus::Sidebar, Focus::List)]
+    #[case(FocusMove::Right, Focus::List, Focus::Reader)]
+    #[case(FocusMove::Right, Focus::Reader, Focus::Reader)]
+    fn focus_moves_between_the_three_panes(
+        #[case] movement: FocusMove,
+        #[case] from: Focus,
+        #[case] to: Focus,
+    ) {
+        assert_eq!(from.moved(movement), to);
+    }
+}

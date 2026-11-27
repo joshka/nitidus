@@ -145,3 +145,61 @@ fn body_line(text: &str) -> Line<'static> {
     };
     Line::styled(text.to_owned(), Style::new().fg(color))
 }
+
+#[cfg(test)]
+mod tests {
+    use insta::assert_snapshot;
+
+    use super::*;
+    use crate::mail::{MessageRef, Template};
+    use crate::ui::test_support::render;
+
+    #[test]
+    fn a_reply_shows_its_badge_recipients_and_quote() {
+        let source = MessageRef {
+            mailbox: "INBOX".into(),
+            id: "1".into(),
+        };
+        let mut draft = Draft::from_template(
+            ComposeKind::Reply {
+                source,
+                scope: ReplyScope::All,
+            },
+            Template::default(),
+        );
+        draft.subject = "Re: Weekend hike?".into();
+        draft.to = vec!["Linus <linus@x.test>".into()];
+        draft.cc = vec!["Grace <grace@x.test>".into()];
+        draft.body = "Count me in.\n\n> Ridge trail on Saturday?\n".into();
+        let composer = Composer::new(draft);
+
+        let screen = render(48, 12, |area, buf| (&composer).render(area, buf));
+
+        assert_snapshot!(screen, @"
+
+         Reply all   Re: Weekend hike?
+
+           To  Linus <linus@x.test>
+           Cc  Grace <grace@x.test>
+
+
+        Count me in.
+
+        > Ridge trail on Saturday?
+        ");
+    }
+
+    #[test]
+    fn a_new_message_without_recipients_says_so() {
+        let draft = Draft::from_template(ComposeKind::New, Template::default());
+
+        let screen = render(40, 7, |area, buf| (&Composer::new(draft)).render(area, buf));
+
+        assert_snapshot!(screen, @"
+
+        New message   (no subject)
+
+          To  (none)
+        ");
+    }
+}

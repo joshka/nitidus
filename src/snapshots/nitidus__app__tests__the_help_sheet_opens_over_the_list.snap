@@ -1,0 +1,34 @@
+---
+source: src/app.rs
+expression: screen
+---
+ nitidus   demo  ›  INBOX
+
+  MAILBOXES             INBOX  50+ · 5 unread                          Notes on the engine's loop construct
+
+  ↓ INBOX      Move around                                  Read                                            est>
+  ✎ Drafts          j k   next / previous                        o S   open / save attachments
+  ↑ Sent            g G   first / last                           L B   links / open in browser
+  ▤ Archive     tab h l   switch pane                              H   message source
+  ✕ Trash         enter   open
+                    esc   back / clear                      Mailboxes
+                    n p   next / prev (reader)                     /   search
+                                                              ctrl-r   refresh                              ght
+               Messages                                        n R D   new / rename / delete                ut
+                    s f   toggle read / flag                       A   switch account                       y notes -
+                    a d   archive / delete                         q   quit                                 ore
+                    m y   move / copy to…
+                    x V   mark / mark all
+                      T   thread view                                                                       ump
+                                                                                                            nter has
+               Write                                                                                        .
+                      c   compose
+                    r R   reply / reply all                                                                 ?
+                      F   forward
+                      e   edit draft                                                                        can carry
+
+
+                                                                   ▕   Ada
+  ● demo                  Margaret Hamilton           ★ yyyy-mm-dd ▕
+                          Priority display review                  ▕
+  j/k  move   c  compose   r  reply   x  mark   a  archive   d  delete   m  move   /  search   ?  help

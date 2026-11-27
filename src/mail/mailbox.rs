@@ -76,3 +76,63 @@ impl Role {
         Some(role)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use super::*;
+    use crate::mail::fixtures::mailbox;
+
+    #[rstest]
+    #[case::stated(mailbox("Spam", Some("junk")), Role::Junk)]
+    #[case::by_name(mailbox("Archive", None), Role::Archive)]
+    #[case::by_name_any_case(mailbox("trash", None), Role::Trash)]
+    #[case::pimdir_prefixed(mailbox("imap/Archive", None), Role::Archive)]
+    #[case::none(mailbox("Projects", None), Role::Other)]
+    fn a_role_is_stated_or_read_from_the_name(#[case] mailbox: Mailbox, #[case] role: Role) {
+        assert_eq!(mailbox.role(), role);
+    }
+
+    #[test]
+    fn the_label_leaves_out_the_source_prefix() {
+        let mailbox = mailbox("imap/Archive", None);
+
+        assert_eq!(
+            (
+                mailbox.label(),
+                mailbox.is_named("archive"),
+                mailbox.is_named("imap/Archive")
+            ),
+            ("Archive", true, true)
+        );
+    }
+
+    #[test]
+    fn roles_order_the_sidebar() {
+        let mut roles = vec![
+            Role::Trash,
+            Role::Other,
+            Role::Inbox,
+            Role::Sent,
+            Role::Junk,
+            Role::Drafts,
+            Role::Archive,
+        ];
+
+        roles.sort();
+
+        assert_eq!(
+            roles,
+            [
+                Role::Inbox,
+                Role::Drafts,
+                Role::Sent,
+                Role::Archive,
+                Role::Other,
+                Role::Junk,
+                Role::Trash
+            ]
+        );
+    }
+}

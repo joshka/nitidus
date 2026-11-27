@@ -16,6 +16,7 @@ clap = { version = "4.5", features = ["derive"] }
 himalaya = "3.0.0"
 html2text = "0.17"
 io-pimdir = { version = "1.0.0", default-features = false, features = ["client", "mail"] }
+itertools = "0.14"
 pimalaya-cli = { version = "0.8.1", default-features = false }
 ratatui = "0.30"
 serde = { version = "1", features = ["derive"] }
@@ -53,3 +54,8 @@ print_stdout = "warn"
 print_stderr = "warn"
 todo = "warn"
 unimplemented = "warn"
+
+[dev-dependencies]
+indoc = "2"
+insta = { version = "1", features = ["filters"] }
+rstest = "0.26"

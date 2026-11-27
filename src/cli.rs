@@ -88,3 +88,35 @@ fn terminal_is_light() -> bool {
         .and_then(|bg| bg.parse::<u8>().ok());
     background.is_some_and(|bg| bg == 7 || bg >= 9)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_demo_takes_its_own_flags() {
+        let cli = Cli::try_parse_from(["nitidus", "--theme", "light", "demo", "--pimdir"])
+            .expect("valid arguments");
+
+        assert!(matches!(
+            cli.command,
+            Some(CliCommand::Demo(DemoArgs {
+                pimdir: true,
+                setup_only: false,
+                ..
+            }))
+        ));
+        assert_eq!(cli.theme.resolve().bg, theme::LIGHT.bg);
+    }
+
+    #[test]
+    fn setup_only_needs_a_directory_to_leave_the_accounts_in() {
+        let error =
+            Cli::try_parse_from(["nitidus", "demo", "--setup-only"]).expect_err("a refusal");
+
+        assert_eq!(
+            error.kind(),
+            clap::error::ErrorKind::MissingRequiredArgument
+        );
+    }
+}

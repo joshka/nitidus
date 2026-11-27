@@ -51,3 +51,29 @@ fn hints_line(hints: &[(String, &'static str)]) -> Line<'static> {
             .collect::<Vec<_>>(),
     )
 }
+
+#[cfg(test)]
+mod tests {
+    use insta::assert_snapshot;
+
+    use super::*;
+    use crate::ui::test_support::render;
+
+    #[test]
+    fn hints_info_and_errors_each_read_at_a_glance() {
+        let hints = vec![("j/k".to_owned(), "move"), ("?".to_owned(), "help")];
+        let draw = |status: Status<'_>| render(40, 1, |area, buf| status.render(area, buf));
+
+        let screens = [
+            draw(Status::Hints(&hints)),
+            draw(Status::Info("Moved 2 messages")),
+            draw(Status::Error("send: no route")),
+        ];
+
+        assert_snapshot!(screens.join("\n"), @"
+         j/k  move   ?  help
+        ✓ Moved 2 messages
+        ✗  send: no route
+        ");
+    }
+}

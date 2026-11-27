@@ -107,3 +107,42 @@ fn chips_line(chips: &[String]) -> Line<'static> {
             .collect::<Vec<_>>(),
     )
 }
+
+#[cfg(test)]
+mod tests {
+    use insta::assert_snapshot;
+
+    use super::*;
+    use crate::ui::test_support::render;
+
+    #[test]
+    fn a_card_lays_out_title_fields_and_chips() {
+        let card = Card {
+            title: Line::raw("Notes on the loop"),
+            fields: vec![
+                Field {
+                    label: "From",
+                    value: "Ada <ada@x.test>".into(),
+                    tone: Tone::Accent,
+                },
+                Field {
+                    label: "To",
+                    value: "(none)".into(),
+                    tone: Tone::Missing,
+                },
+            ],
+            chips: vec!["notes.pdf".into(), "plan.txt".into()],
+        };
+
+        let screen = render(44, card.height(), |area, buf| card.render(area, buf));
+
+        assert_snapshot!(screen, @"
+
+        Notes on the loop
+
+         From  Ada <ada@x.test>
+           To  (none)
+                ⎘ notes.pdf   ⎘ plan.txt
+        ");
+    }
+}

@@ -81,3 +81,57 @@ pub fn long(raw: &str) -> String {
     };
     parsed.map_or_else(|_| raw.to_owned(), local)
 }
+
+#[cfg(test)]
+mod tests {
+    use chrono::Duration;
+    use rstest::rstest;
+
+    use super::*;
+
+    #[rstest]
+    #[case::today(0, Section::Today)]
+    #[case::yesterday(1, Section::Yesterday)]
+    #[case::this_week(4, Section::ThisWeek)]
+    #[case::this_month(20, Section::ThisMonth)]
+    #[case::older(90, Section::Older)]
+    fn a_date_falls_in_the_section_for_its_age(#[case] days_ago: i64, #[case] section: Section) {
+        let noon = Local::now()
+            .date_naive()
+            .and_hms_opt(12, 0, 0)
+            .expect("noon")
+            .and_local_timezone(Local)
+            .single()
+            .expect("one noon");
+        let date = (noon - Duration::days(days_ago)).fixed_offset();
+
+        assert_eq!(Section::of(Some(date)), section);
+    }
+
+    #[test]
+    fn no_date_is_undated_and_shows_nothing() {
+        assert_eq!(
+            (Section::of(None), short(None)),
+            (Section::Undated, String::new())
+        );
+    }
+
+    #[test]
+    fn an_old_date_shows_in_full() {
+        let date = DateTime::parse_from_rfc3339("2020-01-03T12:00:00Z").expect("a date");
+
+        assert!(
+            short(Some(date)).starts_with("2020-01-0"),
+            "{}",
+            short(Some(date))
+        );
+    }
+
+    #[rstest]
+    #[case::unparsable("sometime last week", true)]
+    #[case::rfc_2822("Fri, 3 Jan 2020 12:00:00 +0000", false)]
+    #[case::rfc_3339("2020-01-03T12:00:00Z", false)]
+    fn a_header_date_is_reformatted_unless_unparsable(#[case] raw: &str, #[case] kept: bool) {
+        assert_eq!(long(raw) == raw, kept);
+    }
+}

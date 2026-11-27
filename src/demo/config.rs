@@ -66,3 +66,29 @@ fn write(dir: &Path, toml: &str) -> Result<PathBuf> {
     fs::write(&path, format!("{toml}\n")).with_context(|| format!("write {}", path.display()))?;
     Ok(path)
 }
+
+#[cfg(test)]
+mod tests {
+    use insta::assert_snapshot;
+
+    use super::*;
+
+    #[test]
+    fn a_maildir_account_names_its_root_smtp_sink_and_aliases() {
+        let table = maildir_account("demo", Path::new("/demo/mail"), 2525);
+
+        assert_snapshot!(table, @r#"
+        [accounts.demo]
+        default = true
+        email = "rae@nitidus.test"
+        display-name = "Rae Field"
+        signature = "Rae"
+        maildir.root = "/demo/mail"
+        smtp.server = "smtp://127.0.0.1:2525"
+        mailbox.alias.sent = "Sent"
+        mailbox.alias.drafts = "Drafts"
+        mailbox.alias.trash = "Trash"
+        message.send.save-copy = true
+        "#);
+    }
+}

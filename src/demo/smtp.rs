@@ -125,3 +125,51 @@ impl Session {
         write!(self.out, "{text}\r\n")
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::io::Read as _;
+
+    use super::*;
+
+    /// Sends one message to `recipient` through the sink, answering the server's whole transcript.
+    fn send(port: u16, recipient: &str) -> String {
+        let mut stream = TcpStream::connect(("127.0.0.1", port)).expect("a connection");
+        let script = format!(
+            "EHLO test\r\nMAIL FROM:<a@x.test>\r\nRCPT TO:<{recipient}>\r\nDATA\r\nSubject: hi\r\n\r\n..dotted\r\n.\r\nQUIT\r\n"
+        );
+        stream.write_all(script.as_bytes()).expect("the script");
+        let mut transcript = String::new();
+        stream.read_to_string(&mut transcript).expect("the replies");
+        transcript
+    }
+
+    #[test]
+    fn mail_for_the_demo_address_is_delivered_with_dots_unstuffed() {
+        let inbox = tempfile::tempdir().expect("an inbox");
+        let port = start(inbox.path().to_owned()).expect("the sink");
+
+        let transcript = send(port, ME.1);
+
+        assert!(
+            transcript.ends_with("250 queued\r\n221 bye\r\n"),
+            "{transcript}"
+        );
+        let delivered: Vec<String> = fs::read_dir(inbox.path())
+            .expect("the inbox")
+            .map(|entry| fs::read_to_string(entry.expect("an entry").path()).expect("a message"))
+            .collect();
+        assert_eq!(delivered, ["Subject: hi\r\n\r\n.dotted\r\n"]);
+    }
+
+    #[test]
+    fn mail_for_anyone_else_is_accepted_and_dropped() {
+        let inbox = tempfile::tempdir().expect("an inbox");
+        let port = start(inbox.path().to_owned()).expect("the sink");
+
+        let transcript = send(port, "someone@x.test");
+
+        assert!(transcript.contains("250 queued"), "{transcript}");
+        assert_eq!(fs::read_dir(inbox.path()).expect("the inbox").count(), 0);
+    }
+}

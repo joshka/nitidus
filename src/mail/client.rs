@@ -341,3 +341,29 @@ fn collect_paths(value: Option<&Value>, paths: &mut Vec<String>) {
         Some(Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_)) | None => {}
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::*;
+
+    #[test]
+    fn written_paths_are_found_wherever_the_answer_nests_them() {
+        let answer = json!({ "attachments": [{ "path": "/a.pdf", "id": "1" }, { "path": "/b.txt" }], "other": { "path": "/c" } });
+        let mut paths = Vec::new();
+
+        collect_paths(Some(&answer), &mut paths);
+
+        assert_eq!(paths, ["/a.pdf", "/b.txt", "/c"]);
+    }
+
+    #[test]
+    fn an_argv_himalaya_refuses_is_an_error_not_a_panic() {
+        let mut client = MailClient::new(Vec::new(), None);
+
+        let error = client.run(["no-such-command"]).expect_err("a refusal");
+
+        assert!(error.to_string().contains("no-such-command"), "{error}");
+    }
+}

@@ -319,3 +319,48 @@ pub const FILLER_COUNT: usize = 140;
 
 /// The body of every filler message.
 pub const FILLER_BODY: &str = "An older message, here so the mailbox spans more than one page.";
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn subjects_are_unique_within_a_folder_so_tests_can_find_messages_by_them() {
+        let mut subjects: Vec<(Account, &str, &str)> = MESSAGES
+            .iter()
+            .map(|fake| (fake.account, fake.folder, fake.subject))
+            .collect();
+        subjects.sort_unstable_by_key(|&(account, folder, subject)| {
+            (account == Account::Work, folder, subject)
+        });
+        let total = subjects.len();
+
+        subjects.dedup();
+
+        assert_eq!(subjects.len(), total);
+    }
+
+    #[test]
+    fn flags_are_sorted_maildir_letters() {
+        let unsorted: Vec<&str> = MESSAGES
+            .iter()
+            .map(|fake| fake.flags)
+            .filter(|flags| !flags.chars().is_sorted())
+            .collect();
+
+        assert_eq!(unsorted, Vec::<&str>::new());
+    }
+
+    #[test]
+    fn every_reply_points_at_a_message_that_exists() {
+        let ids: Vec<&str> = MESSAGES.iter().filter_map(|fake| fake.id).collect();
+
+        let dangling: Vec<&str> = MESSAGES
+            .iter()
+            .filter_map(|fake| fake.reply_to)
+            .filter(|parent| !ids.contains(parent))
+            .collect();
+
+        assert_eq!(dangling, Vec::<&str>::new());
+    }
+}

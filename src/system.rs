@@ -65,3 +65,27 @@ pub fn scratch_dir(id: &str) -> Result<PathBuf> {
     std::fs::create_dir_all(&dir).with_context(|| format!("create {}", dir.display()))?;
     Ok(dir)
 }
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use super::*;
+
+    #[rstest]
+    #[case::home("~/notes.txt", true)]
+    #[case::absolute("/tmp/notes.txt", false)]
+    #[case::tilde_user("~bob/notes.txt", false)]
+    fn only_a_leading_tilde_slash_means_home(#[case] path: &str, #[case] from_home: bool) {
+        let home = env::var_os("HOME").map_or_else(PathBuf::new, PathBuf::from);
+
+        let expanded = expand_home(path);
+
+        let expected = if from_home {
+            home.join("notes.txt")
+        } else {
+            PathBuf::from(path)
+        };
+        assert_eq!(expanded, expected);
+    }
+}

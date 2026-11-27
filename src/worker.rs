@@ -81,3 +81,55 @@ fn keep_alive(client: &mut MailClient) -> bool {
     let _reconnects_next_time = client.keep_alive();
     true
 }
+
+#[cfg(test)]
+mod tests {
+    use std::time::{Duration, Instant};
+
+    use super::*;
+    use crate::demo::{Demo, Store};
+
+    /// The first response within a few seconds.
+    fn next(worker: &Worker) -> Option<Response> {
+        let deadline = Instant::now() + Duration::from_secs(10);
+        while Instant::now() < deadline {
+            if let Some(response) = worker.try_recv() {
+                return Some(response);
+            }
+            thread::sleep(Duration::from_millis(10));
+        }
+        None
+    }
+
+    #[test]
+    fn a_request_is_answered_on_the_worker_thread() {
+        let demo = Demo::create(None, Store::Maildir).expect("the demo");
+        let worker = Worker::spawn(demo.account());
+
+        worker.send(Request::Accounts);
+
+        assert!(
+            matches!(next(&worker), Some(Response::Accounts(names)) if names == ["demo", "work"])
+        );
+    }
+
+    #[test]
+    fn a_failure_keeps_every_cause() {
+        let worker = Worker::spawn(AccountSpec {
+            config: vec!["/nonexistent/config.toml".into()],
+            account: None,
+        });
+
+        worker.send(Request::Mailboxes);
+
+        let Some(Response::Failed(failure)) = next(&worker) else {
+            panic!("a failure")
+        };
+        assert_eq!(failure.action, "list mailboxes");
+        assert!(
+            failure.error.contains("/nonexistent/config.toml"),
+            "{}",
+            failure.error
+        );
+    }
+}

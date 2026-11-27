@@ -14,10 +14,13 @@ fmt-check:
 clippy:
     cargo clippy --all-targets --all-features --locked -- -D warnings
 
-# nextest doesn't run doctests, so cargo test runs them.
+# A binary crate has no doctests, so nextest runs everything.
 test:
     cargo nextest run --all-features --locked
-    cargo test --doc --all-features --locked
+
+# Run the tests and review every changed snapshot.
+snapshots:
+    cargo insta test --review
 
 # Check that the Rust documentation builds without warnings.
 rustdoc:

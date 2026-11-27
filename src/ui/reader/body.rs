@@ -97,7 +97,13 @@ fn quoted(text: &str, depth: usize) -> Line<'static> {
 
 #[cfg(test)]
 mod tests {
-    use super::reflow;
+    use indoc::indoc;
+    use insta::assert_snapshot;
+    use ratatui::widgets::{Paragraph, Widget};
+    use rstest::rstest;
+
+    use super::*;
+    use crate::ui::test_support::render;
 
     #[test]
     fn reflow_joins_prose_but_keeps_quotes_and_short_lines() {
@@ -112,5 +118,36 @@ mod tests {
             "Hi,\n\n{long} next line\n> quoted line that is long enough to be hard wrapped ok\n> more\nAda\n"
         );
         assert_eq!(out, expected);
+    }
+
+    #[rstest]
+    #[case::plain("hello", 0)]
+    #[case::one("> hello", 1)]
+    #[case::nested_with_spaces("> > hello", 2)]
+    #[case::not_at_the_start("a > b", 0)]
+    fn quote_depth_counts_leading_markers(#[case] text: &str, #[case] depth: usize) {
+        assert_eq!(quote_depth(text), depth);
+    }
+
+    #[test]
+    fn quotes_get_bars_and_the_signature_starts_at_its_delimiter() {
+        let lines = body_lines(indoc! {"
+            # Notes
+            Hi
+            > asked
+            > > before
+            -- 
+            Ada"});
+
+        let screen = render(24, 6, |area, buf| Paragraph::new(lines).render(area, buf));
+
+        assert_snapshot!(screen, @"
+        # Notes
+        Hi
+        ┃ asked
+        ┃ ┃ before
+        --
+        Ada
+        ");
     }
 }

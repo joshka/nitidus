@@ -1,0 +1,34 @@
+---
+source: src/app.rs
+expression: screen
+---
+ nitidus   demo  ›  INBOX
+
+  MAILBOXES             INBOX  50+ · 5 unread                          Notes on the engine's loop construct
+
+  ↓ INBOX          5    Older                                      ▕    From  Ada Lovelace <ada@analytical.test>
+  ✎ Drafts                                                         ▕      To  Rae Field <rae@nitidus.test>
+  ↑ Sent              ▌   Ada Lovelace                  yyyy-mm-dd ▕    Date  Day, d Mon yyyy  hh:mm
+  ▤ Archive           ▌   Notes on the engine's loop construct     ▕
+  ✕ Trash                                                          ▕
+                          GitHub                        yyyy-mm-dd ▕   Hi Rae,
+                          [ratatui/ratatui] Release v0.30.2        ▕
+                                                                   ▕   I've been sketching how the engine might
+                        ● Grace Hopper                  yyyy-mm-dd ▕   repeat a sequence of operations without
+                          Re: Compiler meeting moved to 3pm        ▕   re-punching the cards. Attached are my notes -
+                                                                   ▕   would love your eyes on section G before
+                        ● Linus Field                 ★ yyyy-mm-dd ▕   Thursday.
+                          Weekend hike?                            ▕
+                                                                   ▕   The short version: a loop is just a jump
+                        ● Ratatui Weekly                yyyy-mm-dd ▕   backwards with a counter, but the counter has
+                          Ratatui Weekly #88: less boxes, more bac ▕   to live somewhere the mill can see it.
+                                                                   ▕
+                        ● Charles Babbage             ⎘ yyyy-mm-dd ▕   ┃ Do we need a new card type for this?
+                          Difference engine no. 2 - drawings       ▕
+                                                                   ▕   I don't think so. The variable cards can carry
+                          Ferris                        yyyy-mm-dd ▕   it.
+                          Your crate was mentioned in This Week in ▕
+                                                                   ▕   Ada
+  ● demo                  Margaret Hamilton           ★ yyyy-mm-dd ▕
+                          Priority display review                  ▕
+  j/k  move   c  compose   r  reply   x  mark   a  archive   d  delete   m  move   /  search   ?  help

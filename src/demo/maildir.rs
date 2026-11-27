@@ -66,8 +66,8 @@ struct Letter<'a> {
     index: usize,
 }
 
-/// Writes every demo message into Maildir folders under `dir`.
-pub fn write_accounts(dir: &Path) -> Result<Accounts> {
+/// Writes every demo message into Maildir folders under `dir`, dated relative to `now`.
+pub fn write_accounts(dir: &Path, now: DateTime<Local>) -> Result<Accounts> {
     let accounts = Accounts {
         personal: dir.join("mail"),
         work: dir.join("work"),
@@ -77,7 +77,6 @@ pub fn write_accounts(dir: &Path) -> Result<Accounts> {
     }
     let filler = filler();
     let fakes = MESSAGES.iter().chain(&filler);
-    let now = Local::now();
     for (index, fake) in fakes.enumerate() {
         let letter = Letter {
             fake,
@@ -201,5 +200,68 @@ fn body(fake: &Fake) -> String {
              Content-Disposition: attachment; filename=\"{name}\"\r\n\
              Content-Transfer-Encoding: base64\r\n\r\n{PDF}\r\n--b--\r\n"
         ),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use chrono::TimeZone;
+    use insta::assert_snapshot;
+
+    use super::*;
+
+    #[test]
+    fn a_reply_is_written_with_threading_headers() {
+        let fake = MESSAGES
+            .iter()
+            .find(|fake| fake.reply_to.is_some())
+            .expect("a reply");
+        let letter = Letter {
+            fake,
+            subject: fake.subject.to_owned(),
+            index: 3,
+        };
+        let now = Local
+            .with_ymd_and_hms(2020, 6, 15, 12, 0, 0)
+            .single()
+            .expect("a fixed time");
+
+        let raw = headers(&letter, now).replace("\r\n", "\n");
+
+        insta::with_settings!({ filters => vec![(r"Date: .*", "Date: [local]")] }, { assert_snapshot!(raw, @"
+        From: Ken Thompson <ken@bell.test>
+        To: Rae Field <rae@nitidus.test>
+        Subject: Re: Why is the pointer syntax like that?
+        Date: [local]
+        Message-ID: <ptr-2@nitidus.test>
+        MIME-Version: 1.0
+        In-Reply-To: <ptr-1@nitidus.test>
+        References: <ptr-1@nitidus.test>
+        "); });
+    }
+
+    #[test]
+    fn filler_is_numbered_after_the_messages() {
+        assert_eq!(
+            subject(&Fake::DEFAULT, MESSAGES.len()),
+            "Announcing Rust 1.40"
+        );
+    }
+
+    #[test]
+    fn an_attachment_makes_the_body_multipart() {
+        let fake = Fake {
+            attachment: Some("a.pdf"),
+            body: "hi",
+            ..Fake::DEFAULT
+        };
+
+        let body = body(&fake);
+
+        assert!(
+            body.starts_with("Content-Type: multipart/mixed")
+                && body.contains("filename=\"a.pdf\""),
+            "{body}"
+        );
     }
 }

@@ -2,6 +2,11 @@
 
 [advisories]
 yanked = "deny"
+ignore = [
+  # chrono is flagged unmaintained. himalaya depends on it too, so dropping it here alone gains
+  # nothing; revisit when himalaya moves (likely to jiff).
+  { id = "RUSTSEC-2026-0543", reason = "unmaintained, not vulnerable; himalaya still uses chrono" },
+]
 
 [licenses]
 # Permissive licenses that something needs. docs/conventions/dependencies.md says which to ask about.
@@ -13,6 +18,9 @@ allow = [
   "CDLA-Permissive-2.0",
   "ISC",
   "MIT",
+  # option-ext, through dirs, which himalaya uses for config paths. File-level copyleft: it covers
+  # option-ext's own files, not nitidus, and an unmodified dependency asks nothing of us.
+  "MPL-2.0",
   "Unicode-3.0",
   "Zlib",
 ]

@@ -14,6 +14,8 @@ pub mod overlay;
 pub mod reader;
 pub mod sidebar;
 pub mod status;
+#[cfg(test)]
+pub mod test_support;
 pub mod theme;
 pub mod topbar;
 

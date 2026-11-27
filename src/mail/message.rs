@@ -132,6 +132,34 @@ mod tests {
     }
 
     #[test]
+    fn the_text_part_wins_with_line_endings_made_plain() {
+        let message = message("one\r\ntwo", "<p>ignored</p>");
+
+        assert_eq!(message.body(80), "one\ntwo");
+    }
+
+    #[test]
+    fn html_alone_is_rendered_as_text() {
+        let json = serde_json::json!({ "id": "1", "headers": {}, "html": "<h1>Title</h1><p>Body text</p>" });
+        let message: Message = serde_json::from_value(json).expect("a message");
+
+        let body = message.body(40);
+
+        assert!(
+            body.contains("Title") && body.contains("Body text") && !body.contains("<p>"),
+            "{body}"
+        );
+    }
+
+    #[test]
+    fn attachments_are_the_named_parts() {
+        let json = serde_json::json!({ "id": "1", "headers": {}, "parts": [{ "filename": null }, { "filename": "a.pdf" }] });
+        let message: Message = serde_json::from_value(json).expect("a message");
+
+        assert_eq!(message.attachments().collect::<Vec<_>>(), ["a.pdf"]);
+    }
+
+    #[test]
     fn links_come_from_text_and_html_once_each() {
         let m = message(
             "See https://ratatui.rs. Or mail mailto:ada@x.test, please.",

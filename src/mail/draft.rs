@@ -163,3 +163,73 @@ impl Draft {
         self.carried.iter().cloned().chain(added)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::path::PathBuf;
+
+    use rstest::rstest;
+
+    use super::*;
+
+    fn draft() -> Draft {
+        Draft::from_template(ComposeKind::New, Template::default())
+    }
+
+    #[rstest]
+    #[case::to(&["a@x.test"], &[], None)]
+    #[case::bcc_alone(&[], &["b@x.test"], None)]
+    #[case::nobody(&[], &[], Some("no recipients"))]
+    fn a_draft_needs_someone_to_send_to(
+        #[case] to: &[&str],
+        #[case] bcc: &[&str],
+        #[case] problem: Option<&str>,
+    ) {
+        let mut draft = draft();
+        draft.to = to.iter().map(|&a| a.to_owned()).collect();
+        draft.bcc = bcc.iter().map(|&a| a.to_owned()).collect();
+
+        assert_eq!(draft.problem(), problem);
+    }
+
+    #[test]
+    fn attachments_list_the_carried_ones_then_the_added() {
+        let mut draft = draft();
+        draft.carried = vec!["engine.pdf".into()];
+        draft.attach = vec![PathBuf::from("/tmp/notes.txt")];
+
+        assert_eq!(
+            draft.attachment_names().collect::<Vec<_>>(),
+            ["engine.pdf", "notes.txt"]
+        );
+    }
+
+    #[test]
+    fn a_template_fills_the_draft_with_addresses_written_out() {
+        let json = serde_json::json!({
+            "from": { "name": "Rae", "email": "rae@x.test" },
+            "to": [{ "name": "Ada", "email": "ada@x.test" }],
+            "subject": "Re: Hi",
+            "body": "> hi\n",
+            "attachments": [{ "filename": "a.pdf" }, { "filename": null }],
+        });
+        let template: Template = serde_json::from_value(json).expect("a template");
+
+        let draft = Draft::from_template(ComposeKind::New, template);
+
+        assert_eq!(
+            (
+                draft.from.as_deref(),
+                draft.to,
+                draft.subject,
+                draft.carried
+            ),
+            (
+                Some("Rae <rae@x.test>"),
+                vec!["Ada <ada@x.test>".to_owned()],
+                "Re: Hi".to_owned(),
+                vec!["a.pdf".to_owned()]
+            )
+        );
+    }
+}

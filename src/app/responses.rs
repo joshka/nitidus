@@ -1,5 +1,7 @@
 //! Folding worker answers back into the screen.
 
+use itertools::Itertools as _;
+
 use super::App;
 use super::triage::plural;
 use crate::mail::{DeleteAction, EnvelopePage, Mailbox, Message, MessageRef, Receipt};
@@ -99,13 +101,37 @@ impl App {
 
     /// A write finished: say what it did, and reload the list if any item failed.
     fn wrote(&mut self, write: &Write, receipt: &Receipt) {
-        if let Some(said) = describe(write, receipt) {
-            self.report(said, receipt);
-        } else if !receipt.errors.is_empty() {
-            self.report("Updated".into(), receipt);
+        let said = describe(&self.labeled(write), receipt);
+        match (said, receipt.errors.is_empty()) {
+            (Some(said), _) => self.report(said, receipt),
+            (None, false) => self.report("Updated".into(), receipt),
+            (None, true) => {}
         }
         if !receipt.errors.is_empty() {
             self.load_envelopes();
+        }
+    }
+
+    /// `write` with its destination named by label, not id (Maildir ids are paths).
+    fn labeled(&self, write: &Write) -> Write {
+        let label = |id: &String| {
+            let mailbox = self
+                .sidebar
+                .mailboxes()
+                .iter()
+                .find(|mailbox| &mailbox.id == id);
+            mailbox.map_or_else(|| id.clone(), |mailbox| mailbox.label().to_owned())
+        };
+        match write {
+            Write::Move { count, to } => Write::Move {
+                count: *count,
+                to: label(to),
+            },
+            Write::Copy { count, to } => Write::Copy {
+                count: *count,
+                to: label(to),
+            },
+            Write::Flag | Write::Delete { .. } => write.clone(),
         }
     }
 
@@ -120,12 +146,9 @@ impl App {
             self.info(said);
             return;
         }
-        let failed: Vec<String> = receipt.errors.iter().map(ToString::to_string).collect();
-        self.error(format!(
-            "{said}, but {} failed: {}",
-            failed.len(),
-            failed.join("; ")
-        ));
+        let count = receipt.errors.len();
+        let failed = receipt.errors.iter().join("; ");
+        self.error(format!("{said}, but {count} failed: {failed}"));
     }
 
     /// A request failed: stop every loading note and show the error with its causes.
@@ -150,5 +173,31 @@ fn describe(write: &Write, receipt: &Receipt) -> Option<String> {
             Some(format!("Moved to trash: {count} message{}", plural(*count)))
         }
         Write::Delete { count } => Some(format!("Deleted {count} message{}", plural(*count))),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use super::*;
+
+    #[rstest]
+    #[case::flag(Write::Flag, None, None)]
+    #[case::move_one(Write::Move { count: 1, to: "Archive".into() }, None, Some("Moved 1 message to Archive"))]
+    #[case::copy_many(Write::Copy { count: 3, to: "Work".into() }, None, Some("Copied 3 messages to Work"))]
+    #[case::to_trash(Write::Delete { count: 2 }, Some(DeleteAction::MovedToTrash), Some("Moved to trash: 2 messages"))]
+    #[case::for_good(Write::Delete { count: 1 }, Some(DeleteAction::Deleted), Some("Deleted 1 message"))]
+    fn a_write_is_described_from_its_receipt(
+        #[case] write: Write,
+        #[case] action: Option<DeleteAction>,
+        #[case] said: Option<&str>,
+    ) {
+        let receipt = Receipt {
+            action,
+            ..Receipt::default()
+        };
+
+        assert_eq!(describe(&write, &receipt).as_deref(), said);
     }
 }

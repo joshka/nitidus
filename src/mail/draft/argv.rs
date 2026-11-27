@@ -101,8 +101,49 @@ fn words(parts: &[&str]) -> Vec<String> {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::super::{MessageRef, Template};
     use super::*;
+
+    fn source() -> MessageRef {
+        MessageRef {
+            mailbox: "INBOX".into(),
+            id: "7".into(),
+        }
+    }
+
+    #[rstest]
+    #[case::new(ComposeKind::New, Some("message compose --body "))]
+    #[case::reply(ComposeKind::Reply { source: source(), scope: ReplyScope::Sender }, Some("message reply -m INBOX --body  -- 7"))]
+    #[case::reply_all(ComposeKind::Reply { source: source(), scope: ReplyScope::All }, Some("message reply -m INBOX --body  --all -- 7"))]
+    #[case::forward(
+        ComposeKind::Forward(source()),
+        Some("message forward -m INBOX --body  -- 7")
+    )]
+    #[case::saved_draft(ComposeKind::Draft(source()), None)]
+    fn each_kind_starts_from_its_own_template(
+        #[case] kind: ComposeKind,
+        #[case] expected: Option<&str>,
+    ) {
+        assert_eq!(
+            template_argv(&kind).map(|argv| argv.join(" ")),
+            expected.map(str::to_owned)
+        );
+    }
+
+    #[test]
+    fn a_new_message_saves_to_drafts_with_its_attachments() {
+        let mut draft = Draft::from_template(ComposeKind::New, Template::default());
+        draft.attach = vec!["/tmp/a.txt".into()];
+
+        let argv = draft.submit_argv("/tmp/body", Submit::SaveDraft).join(" ");
+
+        assert_eq!(
+            argv,
+            "message compose --subject  --body-file /tmp/body --attach /tmp/a.txt --save drafts"
+        );
+    }
 
     #[test]
     fn a_reply_submits_through_reply_with_the_quote_laid_out() {

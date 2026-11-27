@@ -54,3 +54,44 @@ impl Widget for &Confirm {
         Line::from(choices).render(line(inner, 2), buf);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use insta::assert_snapshot;
+    use ratatui::crossterm::event::KeyCode;
+    use rstest::rstest;
+
+    use super::*;
+    use crate::ui::test_support::render;
+
+    #[rstest]
+    #[case::yes(KeyCode::Char('y'), "done")]
+    #[case::shouted_yes(KeyCode::Char('Y'), "done")]
+    #[case::no(KeyCode::Char('n'), "cancelled")]
+    #[case::escape(KeyCode::Esc, "cancelled")]
+    #[case::anything_else(KeyCode::Enter, "open")]
+    fn only_y_confirms(#[case] key: KeyCode, #[case] expected: &str) {
+        let outcome = match Confirm::handle(KeyEvent::from(key)) {
+            Outcome::Done(()) => "done",
+            Outcome::Cancelled => "cancelled",
+            Outcome::Open => "open",
+        };
+
+        assert_eq!(outcome, expected);
+    }
+
+    #[test]
+    fn the_question_offers_yes_and_no() {
+        let confirm = Confirm::new("Delete 2 messages for good?");
+
+        let screen = render(46, 8, |area, buf| (&confirm).render(area, buf));
+
+        assert_snapshot!(screen, @"
+        Are you sure?
+
+        Delete 2 messages for good?
+
+         y  yes    n  no
+        ");
+    }
+}

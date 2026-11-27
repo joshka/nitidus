@@ -1,0 +1,27 @@
+---
+source: src/app/keymap.rs
+expression: "help.join(\"\\n\")"
+---
+       j k  next / previous
+       g G  first / last
+   tab h l  switch pane
+     enter  open
+       esc  back / clear
+       n p  next / prev (reader)
+       s f  toggle read / flag
+       a d  archive / delete
+       m y  move / copy to…
+       x V  mark / mark all
+         T  thread view
+         c  compose
+       r R  reply / reply all
+         F  forward
+         e  edit draft
+       o S  open / save attachments
+       L B  links / open in browser
+         H  message source
+         /  search
+    ctrl-r  refresh
+     n R D  new / rename / delete
+         A  switch account
+         q  quit

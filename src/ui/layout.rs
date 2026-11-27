@@ -94,3 +94,43 @@ pub enum PaneFocus {
     #[default]
     Unfocused,
 }
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use super::*;
+
+    #[rstest]
+    #[case::first(0, Rect::new(2, 3, 10, 1))]
+    #[case::last(3, Rect::new(2, 6, 10, 1))]
+    #[case::past_the_bottom(4, Rect::new(2, 7, 10, 0))]
+    fn a_line_is_one_row_of_the_area_or_empty_below_it(
+        #[case] offset: u16,
+        #[case] expected: Rect,
+    ) {
+        assert_eq!(line(Rect::new(2, 3, 10, 4), offset), expected);
+    }
+
+    #[test]
+    fn below_never_runs_past_the_area() {
+        let area = Rect::new(0, 0, 10, 4);
+
+        assert_eq!(
+            (below(area, 1), below(area, 9)),
+            (Rect::new(0, 1, 10, 3), Rect::new(0, 4, 10, 0))
+        );
+    }
+
+    #[rstest]
+    #[case::focused_selection(1, PaneFocus::Focused, Emphasis::Focused)]
+    #[case::selection_elsewhere(1, PaneFocus::Unfocused, Emphasis::Unfocused)]
+    #[case::other_row(2, PaneFocus::Focused, Emphasis::Plain)]
+    fn a_row_is_set_off_by_selection_and_focus(
+        #[case] index: usize,
+        #[case] focus: PaneFocus,
+        #[case] expected: Emphasis,
+    ) {
+        assert_eq!(Emphasis::of_row(index, 1, focus), expected);
+    }
+}

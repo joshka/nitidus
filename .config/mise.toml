@@ -9,6 +9,7 @@ rust = [
 "aqua:EmbarkStudios/cargo-deny" = "0.21"
 "aqua:casey/just" = "1.59"
 "aqua:crate-ci/typos" = "1.52"
+"cargo:cargo-insta" = "1.49"
 "aqua:rvben/rumdl" = "0.3"
 "github:bnjbvr/cargo-machete" = "0.10"
 "github:nextest-rs/nextest" = { version = "cargo-nextest-0.9.152", bin = "cargo-nextest" }

@@ -58,3 +58,44 @@ impl Movement {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use super::*;
+
+    #[rstest]
+    #[case::down(Movement::Down, 3, 4)]
+    #[case::down_at_the_end(Movement::Down, 19, 19)]
+    #[case::up_at_the_start(Movement::Up, 0, 0)]
+    #[case::page_down_clamps(Movement::PageDown, 15, 19)]
+    #[case::page_up_clamps(Movement::PageUp, 4, 0)]
+    #[case::top(Movement::Top, 12, 0)]
+    #[case::bottom(Movement::Bottom, 2, 19)]
+    fn an_index_moves_within_a_list_of_twenty(
+        #[case] movement: Movement,
+        #[case] from: usize,
+        #[case] to: usize,
+    ) {
+        assert_eq!(movement.index(from, 20), to);
+    }
+
+    #[test]
+    fn an_empty_list_stays_at_zero() {
+        assert_eq!(Movement::Down.index(0, 0), 0);
+    }
+
+    #[rstest]
+    #[case::line(Movement::Down, 5, 6)]
+    #[case::page(Movement::PageDown, 5, 20)]
+    #[case::back_past_the_top(Movement::PageUp, 5, 0)]
+    #[case::bottom_is_clamped_by_the_view(Movement::Bottom, 5, u16::MAX)]
+    fn a_scroll_moves_by_lines_or_pages(
+        #[case] movement: Movement,
+        #[case] from: u16,
+        #[case] to: u16,
+    ) {
+        assert_eq!(movement.scroll(from, 15), to);
+    }
+}

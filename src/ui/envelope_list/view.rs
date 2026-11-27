@@ -212,3 +212,102 @@ fn render_scrollbar(layout: &ListLayout, view: Viewport, buf: &mut Buffer) {
             .set_fg(color);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use insta::assert_snapshot;
+
+    use super::*;
+    use crate::mail::fixtures::envelope;
+    use crate::ui::layout::PaneFocus;
+    use crate::ui::movement::{Movement, Navigate};
+    use crate::ui::test_support::render;
+
+    fn list() -> EnvelopeList {
+        let mut list = EnvelopeList::loading("INBOX".into());
+        list.replace(vec![
+            envelope("1", "Ada", "Notes on the loop", 9, &[]),
+            envelope("2", "Grace", "Compiler meeting", 8, &["seen", "flagged"]),
+            envelope("3", "Ken", "Trusting trust", 7, &["seen"]),
+        ]);
+        list.loading = Loading::Idle;
+        list.focus = PaneFocus::Focused;
+        list
+    }
+
+    #[test]
+    fn rows_sit_under_their_date_band_with_unread_and_flags_marked() {
+        let mut list = list();
+
+        let screen = render(44, 13, |area, buf| list.render(area, buf));
+
+        assert_snapshot!(screen, @"
+
+          INBOX  3 · 1 unread
+
+          Older                                    ▕
+                                                   ▕
+        ▌ ● Ada                         2020-01-09 ▕
+        ▌   Notes on the loop                      ▕
+                                                   ▕
+            Grace                     ★ 2020-01-08 ▕
+            Compiler meeting                       ▕
+                                                   ▕
+            Ken                         2020-01-07 ▕
+            Trusting trust                         ▕
+        ");
+    }
+
+    #[test]
+    fn marks_and_an_unfinished_mailbox_show_in_the_header() {
+        let mut list = list();
+        list.toggle_mark();
+        list.navigate(Movement::Down);
+        list.next_page = Some(2);
+
+        let screen = render(44, 14, |area, buf| list.render(area, buf));
+
+        assert_snapshot!(screen, @"
+
+          INBOX  3+ · 1 unread · 1 marked
+
+          Older                                    ▕
+                                                   ▕
+        ▌ ✓ Ada                         2020-01-09 ▕
+        ▌   Notes on the loop                      ▕
+                                                   ▕
+        ▌   Grace                     ★ 2020-01-08 ▕
+        ▌   Compiler meeting                       ▕
+                                                   ▕
+            Ken                         2020-01-07 ▕
+            Trusting trust                         ▕
+                                                   ▕
+        ");
+    }
+
+    #[test]
+    fn an_empty_list_says_whether_it_is_still_loading() {
+        let mut loading = EnvelopeList::loading("INBOX".into());
+        let mut empty = EnvelopeList::default();
+
+        let screens = [
+            render(30, 6, |area, buf| loading.render(area, buf)),
+            render(30, 6, |area, buf| empty.render(area, buf)),
+        ];
+
+        assert_snapshot!(screens.join("\n---\n"), @"
+
+          INBOX  0
+
+
+                   Loading…
+
+        ---
+
+            0
+
+
+                 No messages
+        ");
+    }
+}

@@ -13,6 +13,7 @@ mod smtp;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
+use chrono::{DateTime, Local};
 use tempfile::TempDir;
 
 use crate::worker::AccountSpec;
@@ -69,7 +70,13 @@ impl Demo {
 /// Writes the demo accounts under `dir`, returning the config path. The Maildir store also starts
 /// the SMTP sink, which runs until the process ends.
 pub fn create(dir: &Path, store: Store) -> Result<PathBuf> {
-    let accounts = maildir::write_accounts(dir)?;
+    create_at(dir, store, Local::now())
+}
+
+/// As [`create`], with the mail dated relative to `now` rather than the clock, so what a test
+/// renders doesn't change with the time of day.
+pub fn create_at(dir: &Path, store: Store, now: DateTime<Local>) -> Result<PathBuf> {
+    let accounts = maildir::write_accounts(dir, now)?;
     match store {
         Store::Maildir => {
             let port = smtp::start(accounts.personal().join("new"))?;

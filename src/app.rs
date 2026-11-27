@@ -1,9 +1,9 @@
 //! The app: screen state, the event loop, and the step from a key to a worker request.
 //!
-//! A key becomes an [`Action`](action::Action) through the [`keymap`], or goes to the open overlay. Each action
-//! group is performed by the module that owns it: [`navigation`], [`triage`], [`compose`],
-//! [`reading`] and [`mailboxes`]. Worker answers come back through [`responses`], and [`view`]
-//! draws the components.
+//! A key becomes an [`Action`](action::Action) through the [`keymap`], or goes to the open overlay.
+//! Each action group is performed by the module that owns it: [`navigation`], [`triage`],
+//! [`compose`], [`reading`] and [`mailboxes`]. Worker answers come back through [`responses`], and
+//! [`view`] draws the components.
 
 mod action;
 mod compose;
@@ -186,5 +186,103 @@ impl App {
     /// Says something failed.
     fn error(&mut self, text: impl Into<String>) {
         self.notice = Some(Notice::error(text));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::time::{Duration, Instant};
+
+    use chrono::{Local, TimeZone};
+    use insta::assert_snapshot;
+    use ratatui::Terminal;
+    use ratatui::backend::TestBackend;
+    use tempfile::TempDir;
+
+    use super::*;
+    use crate::demo::{self, Store};
+    use crate::ui::test_support::text;
+
+    /// The app on a demo account dated in mid-2020, with its first mailbox and message loaded.
+    fn app() -> (TempDir, App) {
+        let dir = TempDir::new().expect("a temporary directory");
+        let now = Local
+            .with_ymd_and_hms(2020, 6, 15, 12, 0, 0)
+            .single()
+            .expect("a fixed time");
+        let config = demo::create_at(dir.path(), Store::Maildir, now).expect("the demo");
+        let mut app = App::new(
+            AccountSpec {
+                config: vec![config],
+                account: Some("demo".into()),
+            },
+            None,
+        );
+        settle(&mut app);
+        (dir, app)
+    }
+
+    /// Folds in answers until nothing is pending, or ten seconds pass.
+    fn settle(app: &mut App) {
+        let deadline = Instant::now() + Duration::from_secs(10);
+        while !app.pending.is_empty() && Instant::now() < deadline {
+            app.take_responses();
+            std::thread::sleep(Duration::from_millis(5));
+        }
+    }
+
+    /// Presses `keys` in turn, settling after each.
+    fn press(app: &mut App, keys: &str) {
+        for c in keys.chars() {
+            app.on_key(KeyEvent::from(KeyCode::Char(c)));
+            settle(app);
+        }
+    }
+
+    /// The whole screen as text.
+    fn screen(app: &mut App) -> String {
+        let mut terminal = Terminal::new(TestBackend::new(120, 30)).expect("a test terminal");
+        terminal.draw(|frame| app.render(frame)).expect("a frame");
+        text(terminal.backend().buffer())
+    }
+
+    /// Masks the dates, which the local time zone shifts: list dates and the reader's long date.
+    fn date_filters() -> Vec<(&'static str, &'static str)> {
+        vec![
+            (r"\b\d{4}-\d{2}-\d{2}\b", "yyyy-mm-dd"),
+            (
+                r"\w{3}, +\d{1,2} \w{3} \d{4}  \d{2}:\d{2}",
+                "Day, d Mon yyyy  hh:mm",
+            ),
+        ]
+    }
+
+    #[test]
+    fn it_opens_on_the_inbox_with_the_newest_message_read() {
+        let (_dir, mut app) = app();
+
+        let screen = screen(&mut app);
+
+        insta::with_settings!({ filters => date_filters() }, { assert_snapshot!(screen); });
+    }
+
+    #[test]
+    fn marking_two_and_archiving_moves_both() {
+        let (_dir, mut app) = app();
+
+        press(&mut app, "jxxa");
+
+        let screen = screen(&mut app);
+        insta::with_settings!({ filters => date_filters() }, { assert_snapshot!(screen); });
+    }
+
+    #[test]
+    fn the_help_sheet_opens_over_the_list() {
+        let (_dir, mut app) = app();
+
+        press(&mut app, "?");
+
+        let screen = screen(&mut app);
+        insta::with_settings!({ filters => date_filters() }, { assert_snapshot!(screen); });
     }
 }

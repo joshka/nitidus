@@ -44,3 +44,17 @@ fn write_escape(sequence: &str) {
         .write_all(sequence.as_bytes())
         .and_then(|()| out.flush());
 }
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use super::*;
+
+    #[rstest]
+    #[case::rgb(Color::Rgb(0x1a, 0x1b, 0x26), "\x1b]11;#1a1b26\x1b\\")]
+    #[case::named(Color::Blue, "")]
+    fn only_rgb_backgrounds_are_sent(#[case] color: Color, #[case] sequence: &str) {
+        assert_eq!(set_background(color), sequence);
+    }
+}

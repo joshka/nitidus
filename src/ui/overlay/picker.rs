@@ -137,3 +137,62 @@ fn render_choice(label: &str, emphasis: Emphasis, area: Rect, buf: &mut Buffer) 
     ];
     Line::from(choice).render(area, buf);
 }
+
+#[cfg(test)]
+mod tests {
+    use insta::assert_snapshot;
+    use ratatui::crossterm::event::KeyCode;
+    use rstest::rstest;
+
+    use super::*;
+    use crate::ui::test_support::render;
+
+    fn picker() -> Picker<&'static str> {
+        Picker::new(
+            "Move to…",
+            vec![
+                ("Archive".into(), "a"),
+                ("Projects".into(), "p"),
+                ("Trash".into(), "t"),
+            ],
+        )
+    }
+
+    /// The outcome after pressing `keys` in turn.
+    fn press(picker: &mut Picker<&'static str>, keys: &[KeyCode]) -> Option<&'static str> {
+        keys.iter()
+            .fold(None, |_, &key| match picker.handle(KeyEvent::from(key)) {
+                Outcome::Done(choice) => Some(choice),
+                Outcome::Open | Outcome::Cancelled => None,
+            })
+    }
+
+    #[rstest]
+    #[case::first(&[KeyCode::Enter], Some("a"))]
+    #[case::down(&[KeyCode::Down, KeyCode::Enter], Some("p"))]
+    #[case::filtered(&[KeyCode::Char('t'), KeyCode::Char('r'), KeyCode::Enter], Some("t"))]
+    #[case::filter_erased(&[KeyCode::Char('t'), KeyCode::Backspace, KeyCode::Enter], Some("a"))]
+    #[case::no_match(&[KeyCode::Char('z'), KeyCode::Enter], None)]
+    fn keys_filter_move_and_choose(#[case] keys: &[KeyCode], #[case] chosen: Option<&'static str>) {
+        assert_eq!(press(&mut picker(), keys), chosen);
+    }
+
+    #[test]
+    fn the_filter_narrows_the_list_and_the_highlight_is_filled() {
+        let mut picker = picker();
+        press(&mut picker, &[KeyCode::Char('r')]);
+
+        let screen = render(40, 12, |area, buf| (&picker).render(area, buf));
+
+        assert_snapshot!(screen, @"
+
+        Move to…
+
+        ⌕ r▏
+
+        ▌ Archive
+          Projects
+          Trash
+        ");
+    }
+}

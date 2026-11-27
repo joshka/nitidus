@@ -216,3 +216,69 @@ impl fmt::Display for Address {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use super::*;
+    use crate::mail::fixtures::envelope;
+
+    #[test]
+    fn a_keyword_is_set_and_cleared_locally() {
+        let mut envelope = envelope("1", "Ada", "Hi", 3, &["seen"]);
+
+        envelope.apply(Keyword::Flagged, FlagChange::Add);
+        envelope.apply(Keyword::Seen, FlagChange::Remove);
+
+        assert_eq!(
+            (envelope.has(Keyword::Flagged), envelope.has(Keyword::Seen)),
+            (true, false)
+        );
+    }
+
+    #[test]
+    fn missing_sender_and_subject_read_as_placeholders() {
+        let envelope: Envelope =
+            serde_json::from_value(serde_json::json!({ "id": "1" })).expect("an envelope");
+
+        assert_eq!(
+            (envelope.sender(), envelope.subject_or_placeholder()),
+            ("(unknown)", "(no subject)")
+        );
+    }
+
+    #[rstest]
+    #[case::named(Some("Ada"), "Ada <ada@x.test>", "Ada")]
+    #[case::unnamed(None, "ada@x.test", "ada@x.test")]
+    #[case::blank_name(Some(""), "ada@x.test", "ada@x.test")]
+    fn an_address_shows_its_name_when_it_has_one(
+        #[case] name: Option<&str>,
+        #[case] shown: &str,
+        #[case] display: &str,
+    ) {
+        let address = Address {
+            name: name.map(str::to_owned),
+            email: "ada@x.test".into(),
+        };
+
+        assert_eq!(
+            (address.to_string().as_str(), address.display_name()),
+            (shown, display)
+        );
+    }
+
+    #[test]
+    fn pages_of_one_listing_are_the_same_listing() {
+        let first = PageQuery::first("INBOX".into(), Some("from:ada".into()));
+        let other = PageQuery::first("INBOX".into(), None);
+
+        assert_eq!(
+            (
+                first.same_listing(&first.at_page(3)),
+                first.same_listing(&other)
+            ),
+            (true, false)
+        );
+    }
+}

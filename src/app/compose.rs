@@ -220,3 +220,31 @@ fn replied(kind: &ComposeKind) -> Option<&MessageRef> {
         ComposeKind::New | ComposeKind::Forward(_) | ComposeKind::Draft(_) => None,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn only_a_reply_marks_its_source_answered() {
+        let source = MessageRef {
+            mailbox: "INBOX".into(),
+            id: "1".into(),
+        };
+        let reply = ComposeKind::Reply {
+            source: source.clone(),
+            scope: ReplyScope::All,
+        };
+
+        assert_eq!(
+            (replied(&reply), replied(&ComposeKind::Forward(source))),
+            (
+                Some(&MessageRef {
+                    mailbox: "INBOX".into(),
+                    id: "1".into()
+                }),
+                None
+            )
+        );
+    }
+}

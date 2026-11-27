@@ -128,13 +128,22 @@ impl EnvelopeList {
         added
     }
 
-    /// Drops envelopes, as after a move or delete, keeping the selection's position.
+    /// Drops envelopes, as after a move or delete. The selection stays on its message when that
+    /// survives, else goes to the next survivor, else the previous one.
     pub fn remove(&mut self, ids: &[String]) {
+        let survives = |envelope: &&Envelope| !ids.contains(&envelope.id);
+        let (before, after) = self
+            .envelopes
+            .split_at(self.selected.min(self.envelopes.len()));
+        let next = after
+            .iter()
+            .find(survives)
+            .or_else(|| before.iter().rev().find(survives));
+        let keep = next.map(|envelope| envelope.id.clone());
         self.envelopes
             .retain(|envelope| !ids.contains(&envelope.id));
         self.marked.retain(|id| !ids.contains(id));
-        self.selected = self.selected.min(self.envelopes.len().saturating_sub(1));
-        let keep = self.current().map(|envelope| envelope.id.clone());
+        self.selected = 0;
         self.arrange(keep);
     }
 
@@ -238,6 +247,7 @@ impl Navigate for EnvelopeList {
 #[cfg(test)]
 mod tests {
     use chrono::{Duration, Local};
+    use rstest::rstest;
 
     use super::*;
 
@@ -260,6 +270,31 @@ mod tests {
         assert_eq!(
             (unmarked, list.targets()),
             (vec!["1".to_owned()], vec!["2".to_owned()])
+        );
+    }
+
+    #[rstest]
+    #[case::the_selection_survives(&["1", "3"], "2")]
+    #[case::the_next_one_takes_its_place(&["2"], "3")]
+    #[case::the_last_falls_back_to_the_previous(&["2", "3", "4"], "1")]
+    fn removing_keeps_the_selection_on_a_survivor(
+        #[case] removed: &[&str],
+        #[case] selected: &str,
+    ) {
+        let mut list = EnvelopeList::default();
+        list.replace(vec![
+            envelope("1", 1),
+            envelope("2", 2),
+            envelope("3", 3),
+            envelope("4", 4),
+        ]);
+        list.navigate(Movement::Down);
+
+        list.remove(&removed.iter().map(|&id| id.to_owned()).collect::<Vec<_>>());
+
+        assert_eq!(
+            list.current().map(|envelope| envelope.id.as_str()),
+            Some(selected)
         );
     }
 

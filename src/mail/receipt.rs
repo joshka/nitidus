@@ -52,3 +52,37 @@ impl fmt::Display for ItemError {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::*;
+
+    #[test]
+    fn a_delete_receipt_says_what_happened_and_what_failed() {
+        let json = json!({ "action": "moved-to-trash", "queued": true, "errors": [{ "id": "7", "error": "gone" }, { "error": "late" }] });
+
+        let receipt: Receipt = serde_json::from_value(json).expect("a receipt");
+
+        let errors: Vec<String> = receipt.errors.iter().map(ToString::to_string).collect();
+        assert_eq!(
+            (receipt.action, receipt.queued, errors),
+            (
+                Some(DeleteAction::MovedToTrash),
+                true,
+                vec!["7: gone".to_owned(), "late".to_owned()]
+            )
+        );
+    }
+
+    #[test]
+    fn a_bare_receipt_has_nothing_to_report() {
+        let receipt: Receipt = serde_json::from_value(json!({})).expect("a receipt");
+
+        assert_eq!(
+            (receipt.action, receipt.queued, receipt.errors.len()),
+            (None, false, 0)
+        );
+    }
+}

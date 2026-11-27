@@ -3,6 +3,7 @@
 mod body;
 mod source;
 
+use itertools::Itertools as _;
 use ratatui::prelude::*;
 use ratatui::widgets::{Paragraph, Widget, Wrap};
 
@@ -11,7 +12,7 @@ use super::card::{Card, Field, Tone};
 use super::layout::{Placeholder, at_most_wide, below, cells};
 use super::movement::{Movement, Navigate};
 use super::{dates, theme};
-use crate::mail::{Address, Message};
+use crate::mail::{Address, Headers, Message};
 
 /// The widest the body is drawn: mail is mostly hard-wrapped near 72–78 columns.
 const MEASURE: u16 = 84;
@@ -133,12 +134,25 @@ fn render_message(message: &Message, scroll: &mut u16, area: Rect, buf: &mut Buf
 
 /// The message's header card: subject, sender, recipients, date and attachments.
 fn card(message: &Message) -> Card<'static> {
-    let t = theme();
     let headers = &message.headers;
     let subject = headers
         .subject
         .clone()
         .unwrap_or_else(|| "(no subject)".into());
+    let title = Line::styled(
+        subject,
+        Style::new().fg(theme().fg).add_modifier(Modifier::BOLD),
+    );
+    let chips = message.attachments().map(str::to_owned).collect();
+    Card {
+        title,
+        fields: header_fields(headers),
+        chips,
+    }
+}
+
+/// The sender and recipients, then the date when the message has one.
+fn header_fields(headers: &Headers) -> Vec<Field> {
     let mut fields = vec![
         field("From", &headers.from, Tone::Accent),
         field("To", &headers.to, Tone::Plain),
@@ -146,27 +160,19 @@ fn card(message: &Message) -> Card<'static> {
     if !headers.cc.is_empty() {
         fields.push(field("Cc", &headers.cc, Tone::Plain));
     }
-    let date = headers.date.as_deref().map_or_default(dates::long);
-    fields.push(Field {
-        label: "Date",
-        value: date,
-        tone: Tone::Plain,
-    });
-    let title = Line::styled(subject, Style::new().fg(t.fg).add_modifier(Modifier::BOLD));
-    Card {
-        title,
-        fields,
-        chips: message.attachments().map(str::to_owned).collect(),
+    if let Some(date) = headers.date.as_deref() {
+        fields.push(Field {
+            label: "Date",
+            value: dates::long(date),
+            tone: Tone::Plain,
+        });
     }
+    fields
 }
 
 /// A field listing addresses.
 fn field(label: &'static str, addresses: &[Address], tone: Tone) -> Field {
-    let value = addresses
-        .iter()
-        .map(ToString::to_string)
-        .collect::<Vec<_>>()
-        .join(", ");
+    let value = addresses.iter().join(", ");
     Field { label, value, tone }
 }
 
@@ -178,4 +184,111 @@ fn render_scrolled(lines: Vec<Line<'static>>, scroll: &mut u16, area: Rect, buf:
         .wrap(Wrap { trim: false })
         .scroll((*scroll, 0))
         .render(area, buf);
+}
+
+#[cfg(test)]
+mod tests {
+    use indoc::indoc;
+    use insta::assert_snapshot;
+
+    use super::*;
+    use crate::mail::fixtures::message;
+    use crate::ui::test_support::render;
+
+    fn reader(text: &str) -> Reader {
+        let mut reader = Reader::default();
+        reader.show(message("1", "Notes on the loop", text));
+        reader
+    }
+
+    #[test]
+    fn a_message_shows_its_card_over_a_styled_body() {
+        let mut reader = reader(indoc! {"
+            Hi Rae,
+
+            > Do we need a new card type?
+
+            No.
+
+            -- 
+            Ada"});
+
+        let screen = render(50, 16, |area, buf| reader.render(area, buf));
+
+        assert_snapshot!(screen, @"
+
+        Notes on the loop
+
+         From  Ada Lovelace <ada@x.test>
+           To  Rae Field <rae@x.test>
+                ⎘ notes.pdf
+
+
+        Hi Rae,
+
+        ┃ Do we need a new card type?
+
+        No.
+
+        --
+        Ada
+        ");
+    }
+
+    #[test]
+    fn the_source_view_waits_for_the_source_then_shows_it() {
+        let mut reader = reader("body");
+        let needs_reading = reader.toggle_source();
+        let waiting = render(40, 4, |area, buf| reader.render(area, buf));
+        reader.set_source(
+            indoc! {"
+            From: ada@x.test
+            Subject: Notes
+
+            body"}
+            .into(),
+        );
+
+        let shown = render(40, 8, |area, buf| reader.render(area, buf));
+
+        assert!(needs_reading);
+        assert_snapshot!(format!("{waiting}\n---\n{shown}"), @"
+
+           Message source
+
+
+        ---
+
+           Message source
+
+           From: ada@x.test
+           Subject: Notes
+
+           body
+        ");
+    }
+
+    #[test]
+    fn scrolling_keeps_half_the_body_in_view() {
+        let long = (1..=40).map(|n| format!("line {n}")).join("\n");
+        let mut reader = reader(&long);
+        reader.navigate(Movement::Bottom);
+
+        let screen = render(30, 16, |area, buf| reader.render(area, buf));
+
+        assert!(screen.contains("line 40"), "{screen}");
+    }
+
+    #[test]
+    fn with_nothing_read_it_invites_a_choice() {
+        let mut reader = Reader::default();
+
+        let screen = render(30, 6, |area, buf| reader.render(area, buf));
+
+        assert_snapshot!(screen, @"
+
+
+        Select a message
+        ");
+    }
 }

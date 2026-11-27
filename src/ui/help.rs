@@ -25,33 +25,33 @@ pub struct HelpSection {
 pub struct Help<'a>(pub &'a [HelpSection]);
 
 impl Help<'_> {
-    /// The lines the sections take: a title, the lines and a gap each, plus padding.
-    fn height(&self) -> u16 {
-        let lines: usize = self.0.iter().map(|section| section.lines.len() + 2).sum();
-        cells(lines + 2)
-    }
-}
-
-impl Widget for Help<'_> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        let t = theme();
-        let panel = self.panel(area);
-        Clear.render(panel, buf);
-        buf.set_style(panel, t.base(t.header));
-        let inner = panel.inner(Margin::new(3, 1));
-        let mut row = 0;
-        for section in self.0 {
-            render_section(section, inner, row, buf);
-            row += cells(section.lines.len()) + 2;
+    /// The sections split into columns: one when they fit `height` rows, else two of about equal
+    /// length, so a short terminal still shows every key.
+    fn columns(&self, height: u16) -> Vec<&[HelpSection]> {
+        let total: usize = self.0.iter().map(section_rows).sum();
+        if cells(total + 2) <= height {
+            return vec![self.0];
         }
+        let mut rows = 0;
+        let split = self.0.iter().position(|section| {
+            rows += section_rows(section);
+            rows * 2 >= total
+        });
+        let (left, right) = self
+            .0
+            .split_at(split.map_or(self.0.len(), |index| index + 1));
+        vec![left, right]
     }
-}
 
-impl Help<'_> {
-    /// The panel, centred in `area`.
-    fn panel(&self, area: Rect) -> Rect {
-        let width = WIDTH.min(area.width);
-        let height = self.height().min(area.height);
+    /// The panel for `columns`, centred in `area`.
+    fn panel(columns: &[&[HelpSection]], area: Rect) -> Rect {
+        let tallest = columns
+            .iter()
+            .map(|column| column.iter().map(section_rows).sum::<usize>())
+            .max()
+            .unwrap_or_default();
+        let width = (WIDTH * cells(columns.len())).min(area.width);
+        let height = cells(tallest + 2).min(area.height);
         let x = area.x + (area.width - width) / 2;
         let y = area.y + (area.height - height) / 2;
         Rect {
@@ -60,6 +60,36 @@ impl Help<'_> {
             width,
             height,
         }
+    }
+}
+
+impl Widget for Help<'_> {
+    fn render(self, area: Rect, buf: &mut Buffer) {
+        let t = theme();
+        let columns = self.columns(area.height);
+        let panel = Help::panel(&columns, area);
+        Clear.render(panel, buf);
+        buf.set_style(panel, t.base(t.header));
+        let inner = panel.inner(Margin::new(3, 1));
+        let constraints = vec![Constraint::Fill(1); columns.len()];
+        let areas = Layout::horizontal(constraints).split(inner);
+        for (column, &column_area) in columns.iter().zip(areas.iter()) {
+            render_column(column, column_area, buf);
+        }
+    }
+}
+
+/// The rows a section takes: its title, its lines and a gap.
+fn section_rows(section: &HelpSection) -> usize {
+    section.lines.len() + 2
+}
+
+/// Sections one under another.
+fn render_column(sections: &[HelpSection], area: Rect, buf: &mut Buffer) {
+    let mut row = 0;
+    for section in sections {
+        render_section(section, area, row, buf);
+        row += cells(section_rows(section));
     }
 }
 
@@ -82,4 +112,61 @@ fn key_line(keys: &str, text: &str) -> Line<'static> {
         ),
         Span::styled(format!("   {text}"), Style::new().fg(t.dim)),
     ])
+}
+
+#[cfg(test)]
+mod tests {
+    use insta::assert_snapshot;
+
+    use super::*;
+    use crate::ui::test_support::render;
+
+    #[test]
+    fn a_short_screen_gets_two_columns_so_every_key_shows() {
+        let sections = [
+            HelpSection {
+                title: "Move",
+                lines: vec![("j k".into(), "next / previous"), ("enter".into(), "open")],
+            },
+            HelpSection {
+                title: "Write",
+                lines: vec![("c".into(), "compose")],
+            },
+        ];
+
+        let screen = render(100, 6, |area, buf| Help(&sections).render(area, buf));
+
+        assert_snapshot!(screen, @"
+
+        Move                                         Write
+             j k   next / previous                          c   compose
+           enter   open
+        ");
+    }
+
+    #[test]
+    fn sections_list_keys_beside_what_they_do() {
+        let sections = [
+            HelpSection {
+                title: "Move",
+                lines: vec![("j k".into(), "next / previous"), ("enter".into(), "open")],
+            },
+            HelpSection {
+                title: "Write",
+                lines: vec![("c".into(), "compose")],
+            },
+        ];
+
+        let screen = render(40, 10, |area, buf| Help(&sections).render(area, buf));
+
+        assert_snapshot!(screen, @"
+
+        Move
+             j k   next / previous
+           enter   open
+
+        Write
+               c   compose
+        ");
+    }
 }

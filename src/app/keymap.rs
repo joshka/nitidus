@@ -1,6 +1,7 @@
 //! Which key does what, as tables. Key dispatch, the status bar's hints and the help sheet all
 //! read these tables, so a binding changes in one place.
 
+use itertools::Itertools as _;
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use super::action::{
@@ -462,11 +463,7 @@ impl Context {
     /// The first key of each of `actions` here, joined by `separator`.
     fn keys_for(self, actions: &[Action], separator: &str) -> String {
         let label = |action: &Action| self.first_key(*action).map_or_default(Key::label);
-        actions
-            .iter()
-            .map(label)
-            .collect::<Vec<_>>()
-            .join(separator)
+        actions.iter().map(label).join(separator)
     }
 
     /// The first key bound to `action` here.
@@ -525,6 +522,8 @@ impl Key {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
 
     #[test]
@@ -550,5 +549,66 @@ mod tests {
         let hints = Context::List.hints();
 
         assert_eq!(hints[0], ("j/k".to_owned(), "move"));
+    }
+
+    #[rstest]
+    #[case::shifted_letter(
+        KeyEvent::new(KeyCode::Char('R'), KeyModifiers::SHIFT),
+        Context::List,
+        Some(Action::Compose(ComposeAction::ReplyAll))
+    )]
+    #[case::control(
+        KeyEvent::new(KeyCode::Char('r'), KeyModifiers::CONTROL),
+        Context::Reader,
+        Some(Action::General(General::Refresh))
+    )]
+    #[case::plain_is_not_control(KeyEvent::from(KeyCode::Char('r')), Context::Sidebar, None)]
+    #[case::global_in_a_pane(
+        KeyEvent::from(KeyCode::Char('?')),
+        Context::Sidebar,
+        Some(Action::General(General::Help))
+    )]
+    #[case::draft_ignores_globals(KeyEvent::from(KeyCode::Char('?')), Context::Draft, None)]
+    fn keys_map_to_actions_by_context(
+        #[case] key: KeyEvent,
+        #[case] context: Context,
+        #[case] action: Option<Action>,
+    ) {
+        assert_eq!(context.action(key), action);
+    }
+
+    #[test]
+    fn no_key_is_bound_twice_in_one_table() {
+        let tables = [GLOBAL, NAVIGATION, SIDEBAR, LIST, READER, MESSAGE, DRAFT];
+        let mut repeats = Vec::new();
+        for table in tables {
+            let keys: Vec<Key> = table
+                .iter()
+                .flat_map(|binding| binding.keys.iter().copied())
+                .collect();
+            repeats.extend(
+                keys.iter()
+                    .enumerate()
+                    .filter(|(index, key)| keys[..*index].contains(key))
+                    .map(|(_, key)| key.label()),
+            );
+        }
+
+        assert_eq!(repeats, Vec::<String>::new());
+    }
+
+    #[test]
+    fn the_help_sheet_reads_its_keys_from_the_bindings() {
+        let help: Vec<String> = help()
+            .iter()
+            .flat_map(|section| {
+                section
+                    .lines
+                    .iter()
+                    .map(|(keys, text)| format!("{keys:>10}  {text}"))
+            })
+            .collect();
+
+        insta::assert_snapshot!(help.join("\n"));
     }
 }

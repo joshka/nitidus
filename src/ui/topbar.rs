@@ -57,3 +57,25 @@ impl TopBar<'_> {
         ]
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use insta::assert_snapshot;
+
+    use super::*;
+    use crate::ui::test_support::render;
+
+    #[test]
+    fn the_title_names_the_place_and_what_is_running() {
+        let bar = TopBar {
+            account: "demo",
+            place: "INBOX",
+            busy: Some("Reading"),
+            tick: 0,
+        };
+
+        let screen = render(50, 1, |area, buf| bar.render(area, buf));
+
+        assert_snapshot!(screen, @" nitidus   demo  ›  INBOX               ⣾ Reading");
+    }
+}
