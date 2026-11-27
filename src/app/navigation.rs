@@ -229,6 +229,16 @@ impl App {
         self.info(if threaded { "Thread view" } else { "Date view" });
     }
 
+    /// Switches between two-line and one-line rows.
+    pub(super) fn toggle_compact(&mut self) {
+        let compact = self.list.toggle_compact();
+        self.info(if compact {
+            "Compact rows"
+        } else {
+            "Comfortable rows"
+        });
+    }
+
     /// Steps back: closes the source, leaves the reader, clears marks, then clears the search.
     pub(super) fn back(&mut self) {
         if self.reader.showing_source() {

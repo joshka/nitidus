@@ -20,15 +20,15 @@ expression: screen
                     m y   move / copy to…
                     x V   mark / mark all
                       T   thread view                                                                       ump
-                                                                                                            nter has
-               Write                                                                                        .
-                      c   compose
-                    r R   reply / reply all                                                                 ?
-                      F   forward
-                      e   edit draft                                                                        can carry
+                      C   compact rows                                                                      nter has
+                                                                                                            .
+               Write
+                      c   compose                                                                           ?
+                    r R   reply / reply all
+                      F   forward                                                                           can carry
+                      e   edit draft
 
 
-                                                                   ▕   Ada
   ● demo                  Margaret Hamilton           ★ yyyy-mm-dd ▕
                           Priority display review                  ▕
   j/k  move   c  compose   r  reply   x  mark   a  archive   d  delete   m  move   /  search   ?  help

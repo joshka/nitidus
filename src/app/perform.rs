@@ -30,6 +30,7 @@ impl App {
             General::Search => self.prompt_search(),
             General::Accounts => self.request("Listing accounts", Request::Accounts),
             General::ToggleThreads => self.toggle_threads(),
+            General::ToggleCompact => self.toggle_compact(),
             General::Back => self.back(),
         }
     }

@@ -45,6 +45,9 @@ pub struct EnvelopeList {
     /// Whether replies are grouped under their parents.
     threaded: bool,
 
+    /// Whether each envelope takes one line instead of two and a gap.
+    compact: bool,
+
     /// The next page to load, `None` once the mailbox is complete.
     pub next_page: Option<usize>,
 }
@@ -217,6 +220,12 @@ impl EnvelopeList {
         let keep = self.current().map(|envelope| envelope.id.clone());
         self.arrange(keep);
         self.threaded
+    }
+
+    /// Switches between two-line and one-line rows, answering whether rows are now compact.
+    pub fn toggle_compact(&mut self) -> bool {
+        self.compact = !self.compact;
+        self.compact
     }
 
     /// Puts the envelopes in display order and reselects `keep` when given.

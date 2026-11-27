@@ -39,7 +39,8 @@ nitidus demo             # a fake Maildir account, no login needed
 
 - Every backend Himalaya supports, configured once in Himalaya's config; switch accounts with `A`.
 - Mailboxes: browse, create, rename, delete. The envelope list pages through the whole mailbox,
-  groups by date or by thread (`T`), and picks up new mail every 30 seconds.
+  groups by date or by thread (`T`), shows one line per message when compact (`C`), and picks up new
+  mail every 30 seconds.
 - Reading: plain text and HTML, quoted text set off, attachments to open or save, a link picker, the
   raw source, and opening the HTML part in a browser.
 - Triage: read, flag, archive, delete (to the trash; asks first inside it), move or copy through a
@@ -50,19 +51,19 @@ nitidus demo             # a fake Maildir account, no login needed
 
 ## Keys
 
-| Keys                           | Action                                                                 |
-| ------------------------------ | ---------------------------------------------------------------------- |
-| `j` `k` `g` `G`, `tab` `h` `l` | move, switch pane                                                      |
-| `enter`, `esc`                 | open, back / clear marks / clear search                                |
-| `s` `f`                        | toggle read / flag                                                     |
-| `a` `d` `m` `y`                | archive, delete, move to…, copy to…                                    |
-| `x` (or `space`), `V`          | mark, mark all                                                         |
-| `c`, `r` `R`, `F`, `e`         | compose, reply / reply all, forward, edit a draft                      |
-| `o` `S`                        | open / save attachments                                                |
-| `L` `B` `H`                    | links, open HTML in a browser, message source                          |
-| `/`, `ctrl-r`, `T`             | search (`from:ada is:unread has:attachment date:2d`), refresh, threads |
-| `n` `R` `D` (mailbox pane)     | new, rename, delete mailbox                                            |
-| `A`, `?`, `q`                  | switch account, help, quit                                             |
+| Keys                           | Action                                                                          |
+| ------------------------------ | ------------------------------------------------------------------------------- |
+| `j` `k` `g` `G`, `tab` `h` `l` | move, switch pane                                                               |
+| `enter`, `esc`                 | open, back / clear marks / clear search                                         |
+| `s` `f`                        | toggle read / flag                                                              |
+| `a` `d` `m` `y`                | archive, delete, move to…, copy to…                                             |
+| `x` (or `space`), `V`          | mark, mark all                                                                  |
+| `c`, `r` `R`, `F`, `e`         | compose, reply / reply all, forward, edit a draft                               |
+| `o` `S`                        | open / save attachments                                                         |
+| `L` `B` `H`                    | links, open HTML in a browser, message source                                   |
+| `/`, `ctrl-r`, `T`, `C`        | search (`from:ada is:unread has:attachment date:2d`), refresh, threads, compact |
+| `n` `R` `D` (mailbox pane)     | new, rename, delete mailbox                                                     |
+| `A`, `?`, `q`                  | switch account, help, quit                                                      |
 
 The composer opens your `$VISUAL` / `$EDITOR` on a plain file: headers (`To:`, `Cc:`, `Bcc:`,
 `Subject:`, and `Attach:` lines naming files), a blank line, then the body. Back in nitidus you

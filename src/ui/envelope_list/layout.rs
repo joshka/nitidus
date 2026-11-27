@@ -1,13 +1,8 @@
 //! Where each part of the list sits, in lines, before any is drawn: a date band and a blank line
-//! before each section, a row per envelope, and a line saying more is loading.
+//! before each section, a row per envelope, and a line saying more is loading. Compact rows take
+//! one line each, and their bands drop the blank line.
 
 use crate::ui::dates::Section;
-
-/// Lines an envelope row takes: sender, subject, and a gap.
-pub const ROW_LINES: usize = 3;
-
-/// Lines a date band takes: the band and a blank line.
-const BAND_LINES: usize = 2;
 
 /// Lines the "more below" note takes, with the gap above it.
 const MORE_LINES: usize = 2;
@@ -25,6 +20,9 @@ pub struct ListLayout {
 
     /// The lines everything takes.
     pub total: usize,
+
+    /// How tall rows and bands are.
+    density: Density,
 }
 
 impl ListLayout {
@@ -33,22 +31,24 @@ impl ListLayout {
         sections: impl IntoIterator<Item = Section>,
         banded: Banding,
         paging: Paging,
+        density: Density,
     ) -> Self {
         let mut layout = Self {
             tops: Vec::new(),
             bands: Vec::new(),
             more: None,
             total: 0,
+            density,
         };
         let mut previous = None;
         for section in sections {
             if banded == Banding::BySection && previous != Some(section) {
                 layout.bands.push((layout.total, section));
-                layout.total += BAND_LINES;
+                layout.total += density.band_lines();
                 previous = Some(section);
             }
             layout.tops.push(layout.total);
-            layout.total += ROW_LINES;
+            layout.total += density.row_lines();
         }
         if paging == Paging::More {
             layout.more = Some(layout.total);
@@ -61,10 +61,15 @@ impl ListLayout {
     /// lines, moving as little as possible from `offset`. The last row brings the "more" note.
     pub fn scroll_to(&self, selected: usize, offset: usize, height: usize) -> usize {
         let top = self.tops[selected];
-        let opens_section = self.bands.iter().any(|&(band, _)| band + BAND_LINES == top);
-        let from = if opens_section { top - BAND_LINES } else { top };
+        let band_lines = self.density.band_lines();
+        let opens_section = self.bands.iter().any(|&(band, _)| band + band_lines == top);
+        let from = if opens_section { top - band_lines } else { top };
         let is_last = selected + 1 == self.tops.len();
-        let to = if is_last { self.total } else { top + ROW_LINES };
+        let to = if is_last {
+            self.total
+        } else {
+            top + self.density.row_lines()
+        };
         if from < offset {
             from
         } else if to > offset + height {
@@ -81,6 +86,43 @@ impl ListLayout {
             .rev()
             .find(|&&(band, _)| band < offset)
             .map(|&(_, section)| section)
+    }
+}
+
+/// How much room each envelope gets.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Density {
+    /// Sender over subject, then a gap.
+    #[default]
+    Comfortable,
+
+    /// One line per envelope, with no gap.
+    Compact,
+}
+
+impl Density {
+    /// Lines an envelope's row takes, its gap included.
+    const fn row_lines(self) -> usize {
+        match self {
+            Self::Comfortable => 3,
+            Self::Compact => 1,
+        }
+    }
+
+    /// Lines an envelope's row draws into, without its gap.
+    pub const fn drawn_lines(self) -> usize {
+        match self {
+            Self::Comfortable => 2,
+            Self::Compact => 1,
+        }
+    }
+
+    /// Lines a date band takes: the band, and a blank line unless compact.
+    const fn band_lines(self) -> usize {
+        match self {
+            Self::Comfortable => 2,
+            Self::Compact => 1,
+        }
     }
 }
 
@@ -116,6 +158,7 @@ mod tests {
             [Section::Today, Section::Today, Section::Older],
             Banding::BySection,
             Paging::More,
+            Density::Comfortable,
         )
     }
 
@@ -158,8 +201,36 @@ mod tests {
             [Section::Today, Section::Older],
             Banding::None,
             Paging::Complete,
+            Density::Comfortable,
         );
 
         assert_eq!((layout.tops, layout.bands.len()), (vec![0, 3], 0));
+    }
+
+    #[test]
+    fn compact_rows_take_a_line_each_and_bands_lose_their_gap() {
+        let layout = ListLayout::new(
+            [Section::Today, Section::Today, Section::Older],
+            Banding::BySection,
+            Paging::More,
+            Density::Compact,
+        );
+
+        assert_eq!(
+            (layout.tops.as_slice(), layout.more, layout.total),
+            ([1, 2, 4].as_slice(), Some(5), 7)
+        );
+    }
+
+    #[test]
+    fn a_compact_row_opening_a_section_brings_its_band() {
+        let layout = ListLayout::new(
+            [Section::Today, Section::Older, Section::Older],
+            Banding::BySection,
+            Paging::Complete,
+            Density::Compact,
+        );
+
+        assert_eq!(layout.scroll_to(1, 4, 2), 2);
     }
 }

@@ -4,7 +4,7 @@
 use ratatui::prelude::*;
 use ratatui::widgets::Widget;
 
-use super::layout::{Banding, ListLayout, Paging, ROW_LINES};
+use super::layout::{Banding, Density, ListLayout, Paging};
 use super::row::{Row, RowState};
 use super::{EnvelopeList, Loading};
 use crate::ui::dates::Section;
@@ -70,10 +70,18 @@ impl EnvelopeList {
     /// The mailbox name, counts, marks and search on the left; the thread view on the right.
     fn render_header(&self, area: Rect, buf: &mut Buffer) {
         Line::from(self.header_spans()).render(area, buf);
-        if self.threaded {
-            Line::styled("threads ", Style::new().fg(theme().accent))
-                .right_aligned()
-                .render(area, buf);
+        let modes = [(self.threaded, "threads"), (self.compact, "compact")];
+        let shown: Vec<&str> = modes
+            .into_iter()
+            .filter_map(|(on, name)| on.then_some(name))
+            .collect();
+        if !shown.is_empty() {
+            Line::styled(
+                format!("{} ", shown.join(" · ")),
+                Style::new().fg(theme().accent),
+            )
+            .right_aligned()
+            .render(area, buf);
         }
     }
 
@@ -134,7 +142,16 @@ impl EnvelopeList {
         } else {
             Paging::Complete
         };
-        ListLayout::new(sections, banding, paging)
+        ListLayout::new(sections, banding, paging, self.density())
+    }
+
+    /// How tall rows are.
+    const fn density(&self) -> Density {
+        if self.compact {
+            Density::Compact
+        } else {
+            Density::Comfortable
+        }
     }
 
     /// The bands, rows, sticky band and "more" note on screen.
@@ -160,7 +177,7 @@ impl EnvelopeList {
 
     /// Every row wholly on screen.
     fn render_rows(&self, layout: &ListLayout, view: Viewport, buf: &mut Buffer) {
-        let row_height = ROW_LINES - 1;
+        let row_height = self.density().drawn_lines();
         for (index, envelope) in self.envelopes.iter().enumerate() {
             let area = view.rows(layout.tops[index], row_height);
             if let Some(area) = area.filter(|area| usize::from(area.height) == row_height) {
@@ -179,6 +196,7 @@ impl EnvelopeList {
             emphasis: Emphasis::of_row(index, self.selected, self.focus),
             marked: self.marked.contains(&self.envelopes[index].id),
             depth: self.depth.get(index).copied().unwrap_or_default(),
+            compact: self.compact,
         }
     }
 }
@@ -282,6 +300,24 @@ mod tests {
             Ken                         2020-01-07 ▕
             Trusting trust                         ▕
                                                    ▕
+        ");
+    }
+
+    #[test]
+    fn compact_rows_put_sender_subject_and_date_on_one_line() {
+        let mut list = list();
+        list.toggle_compact();
+
+        let screen = render(60, 7, |area, buf| list.render(area, buf));
+
+        assert_snapshot!(screen, @"
+
+          INBOX  3 · 1 unread                             compact
+
+          Older
+        ▌ ● Ada              Notes on the loop          2020-01-09
+            Grace            Compiler meeting         ★ 2020-01-08
+            Ken              Trusting trust             2020-01-07
         ");
     }
 

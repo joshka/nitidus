@@ -55,6 +55,9 @@ pub enum General {
     /// Switch between the date and thread views.
     ToggleThreads,
 
+    /// Switch between two-line and one-line rows.
+    ToggleCompact,
+
     /// Step back: close the source, leave the reader, clear marks, then clear the search.
     Back,
 }
