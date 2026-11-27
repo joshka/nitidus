@@ -10,8 +10,9 @@ export CARGO_RESOLVER_INCOMPATIBLE_PUBLISH_AGE=allow
 ## Why
 
 The point of the rewrite is the current Pimalaya stack; the older releases are a different
-architecture. The override is a conscious, temporary exception, not a habit: other new dependencies
-are pinned to a version older than seven days (rstest 0.26 rather than 0.29).
+architecture. While the override is on, dependency updates take the latest version of everything,
+which also brings in security fixes as soon as they are published. It is a temporary exception: when
+the window passes, updates go back to respecting the age rule.
 
 ## Consequences
 
