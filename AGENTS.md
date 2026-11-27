@@ -25,8 +25,7 @@ Read the convention that applies to the task:
 
 ## Working here
 
-- Use jj. Start a described change for each independent review unit, and work in `work/<name>`
-  workspaces rather than the root.
+- Make each independent review unit its own change.
 - GitHub Actions are locked in `.github/workflows/actions.lock`. After changing any `uses:`, run
   `gh actions-lock` and commit both files. See [GitHub Actions](docs/github-actions.md). Never edit
   or delete the lockfile by hand.
@@ -34,7 +33,7 @@ Read the convention that applies to the task:
 - Show visible changes as recordings: add or update a tape in `tapes/`, run `just tape <name>`, and
   share the GIF or MP4 from `target/screens/`. Never commit the output.
 - Delete a roadmap item in the change that lands it, and add any bug found along the way. Keep
-  status and process notes out of the repository: they go in the ignored `.plans/` folder.
+  status and process notes out of the repository.
 - Record a design choice that would surprise a newcomer as a decision in `docs/decisions/`.
 - When feedback establishes a reusable rule, add it to the convention file that owns it, with its
   reason. Keep this file as the map.
